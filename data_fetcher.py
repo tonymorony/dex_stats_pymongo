@@ -11,7 +11,14 @@ possible_pairs = list(itertools.combinations(adex_tickers, 2))
 
 db_connection = MongoAPI()
 
+pairs_iter = 0
+swaps_iter = 0
 for pair in possible_pairs:
-    # TODO: calculate needed data and dump as json
-    db_connection.find_swaps_for_market(pair[0], pair[1])
+    total_swaps = len(list(db_connection.find_swaps_for_market(pair[0], pair[1])))
+    if total_swaps > 0:
+        print("Pair: " + str(pair) + " Total swaps: " + str(total_swaps))
+        pairs_iter += 1
+        swaps_iter += total_swaps
+print("Total swaps directions: " + str(pairs_iter))
+print("Total swaps: " + str(swaps_iter))
     
