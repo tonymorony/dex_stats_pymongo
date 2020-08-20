@@ -6,8 +6,8 @@ adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL",
                 "MCL", "MGW", "MORTY", "NAV", "OOT", "PANGEA", "PAX", "QTUM", "REVS", "RFOX", "RICK", "RVN",
                 "SUPERNET", "TUSD", "USDC", "VRSC", "XZC", "ZEC", "ZER"]
 
-# 45 tickers atm = 990 pairs
-possible_pairs = list(itertools.combinations(adex_tickers, 2))
+# 45 tickers atm = 1980 pairs
+possible_pairs = list(itertools.permutations(adex_tickers, 2))
 
 db_connection = MongoAPI()
 
