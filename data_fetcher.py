@@ -2,6 +2,7 @@ import datetime
 import itertools
 import json
 from db_connector import MongoAPI
+from utils import adex_calls
 
 adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL", "CHIPS", "CRYPTO", "DAI", "DASH",
                 "DEX", "DGB", "DOGE", "ECA", "EMC2", "ETH", "FTC", "HUSH", "ILN", "JUMBLR", "KMD", "LABS", "LTC",
@@ -33,8 +34,17 @@ def fetch_summary_data():
             lowest_price_24h = 0
             first_swap_price = 0
             last_swap_price = 0
+            lowest_ask = 0
+            highest_bid = 0
             timestamp_24h_ago = int((datetime.date.today() - datetime.timedelta(1)).strftime("%s"))
+            pair_orderbook = json.loads(adex_calls.get_orderbook("http://127.0.0.1:7783", "testuser", pair[0], pair[1]).text)
 
+            try:
+                lowest_ask  = min([float(x['price']) for x in pair_orderbook["asks"]])
+                highest_bid = max([float(x['price']) for x in pair_orderbook["bids"]])
+            # TODO: proper handling of empty bid/asks
+            except Exception:
+                 pass
 
             for swap in pair_swaps:
                 # TODO: make a get_price funciton or maybe it worth to add on DB population stage
@@ -74,11 +84,13 @@ def fetch_summary_data():
             pair_data = {"trading_pair": pair[0] + "_" + pair[1], "base_currency": pair[0],
                          "quote_currency": pair[1], "last_price": last_price,
                          "last_trade_time": last_timestamp, "base_volume_24h": base_volume_24h,
-                         "quote_volume_24h": quote_volume_24h, "highest_price_24h": highest_price_24h,
-                         "lowest_price_24h": lowest_price_24h, "price_change_percent_24h": price_change_percent_24h}
+                         "quote_volume_24h": quote_volume_24h, "highest_price_24h": format(float(highest_price_24h), '.10f'),
+                         "lowest_price_24h": format(float(lowest_price_24h), '.10f'), "price_change_percent_24h": price_change_percent_24h,
+                         "lowest_ask": format(lowest_ask, '.10f'), "highest_bid": format(highest_bid, '.10f')}
             summary_endpoint_data.append(pair_data)
 
     with open('summary.json', 'w') as f:
         json.dump(summary_endpoint_data, f)
 
 fetch_summary_data()
+
