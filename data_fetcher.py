@@ -1,3 +1,4 @@
+import datetime
 import itertools
 import json
 from db_connector import MongoAPI
@@ -11,31 +12,73 @@ adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL",
 possible_pairs = list(itertools.permutations(adex_tickers, 2))
 db_connection = MongoAPI()
 
+
 def fetch_summary_data():
     summary_endpoint_data = []
     for pair in possible_pairs:
-        # TODO: have to get only succesful swaps or last price might be counted for failed too!
+
         pair_swaps = list(db_connection.find_swaps_for_market(pair[0], pair[1]))
         total_swaps = len(pair_swaps)
         # fetching data for pairs with historical swaps only
         if total_swaps > 0:
+
+            first_timestamp_24h = 0
+            last_timestamp_24h = 0
             last_timestamp = 0
             last_price = 0
+            base_volume_24h = 0
+            quote_volume_24h = 0
+            price_change_percent_24h = 0
+            highest_price_24h = 0
+            lowest_price_24h = 0
+            first_swap_price = 0
+            last_swap_price = 0
+            timestamp_24h_ago = int((datetime.date.today() - datetime.timedelta(1)).strftime("%s"))
+
+
             for swap in pair_swaps:
                 # TODO: make a get_price funciton or maybe it worth to add on DB population stage
                 first_event = swap["events"][0]["event"]
+                # adex timestamp are in ms
+                swap_timestamp = swap["events"][0]["timestamp"] // 1000
+                # TODO: have to get only succesful swaps or last price might be counted for failed too!
                 if first_event["type"] == "Started":
                     swap_price = float(first_event["data"]["taker_amount"]) / float(first_event["data"]["maker_amount"])
-                    if swap["events"][0]["timestamp"] > last_timestamp:
+                    # 24h volume and price calculating price
+                    if swap_timestamp > timestamp_24h_ago:
+                        base_volume_24h  += float(first_event["data"]["maker_amount"])
+                        quote_volume_24h += float(first_event["data"]["taker_amount"])
+                        if swap_price > highest_price_24h:
+                            highest_price_24h = swap_price
+                        if lowest_price_24h == 0:
+                            lowest_price_24h = swap_price
+                        elif swap_price < lowest_price_24h:
+                            lowest_price_24h = swap_price
+                        # last trade 24h determining part
+                        if swap_timestamp > last_timestamp_24h:
+                            last_price = format(swap_price, '.10f')
+                            last_timestamp_24h = swap_timestamp
+                            last_swap_price = format(swap_price, '.10f')
+                        # first trade 24h determining part
+                        if swap_timestamp == 0:
+                            first_timestamp_24h = swap_timestamp
+                            first_swap_price = format(swap_price, '.10f')
+                        elif swap_timestamp <  first_timestamp_24h:
+                            first_timestamp_24h = swap_timestamp
+                            first_swap_price = format(swap_price, '.10f')
+                    # last trade overall determining part - there might be no swaps in 24h, thats why its here
+                    if swap_timestamp > last_timestamp:
                         last_price =  format(swap_price, '.10f')
-                        last_timestamp = swap["events"][0]["timestamp"]
+                        last_timestamp = swap_timestamp
+                price_change_percent_24h = format((float(last_swap_price) - float(first_swap_price)) / 100, '.10f')
             pair_data = {"trading_pair": pair[0] + "_" + pair[1], "base_currency": pair[0],
                          "quote_currency": pair[1], "last_price": last_price,
-                         "last_trade_time": last_timestamp}
+                         "last_trade_time": last_timestamp, "base_volume_24h": base_volume_24h,
+                         "quote_volume_24h": quote_volume_24h, "highest_price_24h": highest_price_24h,
+                         "lowest_price_24h": lowest_price_24h, "price_change_percent_24h": price_change_percent_24h}
             summary_endpoint_data.append(pair_data)
 
     with open('summary.json', 'w') as f:
         json.dump(summary_endpoint_data, f)
 
 fetch_summary_data()
-        
