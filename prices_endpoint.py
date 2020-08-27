@@ -27,6 +27,16 @@ def orderbook(market_pair="KMD_BTC"):
                 data = pair
     return jsonify(data)
 
+@app.route('/api/v1/trades/<market_pair>', methods=['GET'])
+def trades(market_pair="KMD_BTC"):
+    with open('trades.json') as json_file:
+        #TODO: handle non existent pair
+        pairs_data = json.load(json_file)
+        for pair in pairs_data:
+            if market_pair in pair.keys():
+                data = pair
+    return jsonify(data)
+
 if __name__ == '__main__':
     #logging.basicConfig(filename='/var/log/dex_prices_endpoint.log',level=logging.DEBUG)
     app.run(host='0.0.0.0', port=8080)
