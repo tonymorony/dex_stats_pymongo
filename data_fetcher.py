@@ -5,6 +5,7 @@ import json
 from db_connector import MongoAPI
 from utils import adex_calls
 
+
 adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL", "CHIPS", "CRYPTO", "DAI", "DASH",
                 "DEX", "DGB", "DOGE", "ECA", "EMC2", "ETH", "FTC", "HUSH", "ILN", "JUMBLR", "KMD", "LABS", "LTC",
                 "MCL", "MGW", "MORTY", "NAV", "OOT", "PANGEA", "PAX", "QTUM", "REVS", "RFOX", "RICK", "RVN",
@@ -16,9 +17,11 @@ db_connection = MongoAPI()
 
 
 def fetch_summary_data():
+
     summary_endpoint_data = []
     ticker_endpoint_data = []
     orderbook_data = []
+    trades_data = []
 
     for pair in possible_pairs:
 
@@ -42,6 +45,7 @@ def fetch_summary_data():
             highest_bid = 0
             timestamp_24h_ago = int((datetime.date.today() - datetime.timedelta(1)).strftime("%s"))
             pair_orderbook = json.loads(adex_calls.get_orderbook("http://127.0.0.1:7783", "testuser", pair[0], pair[1]).text)
+            pair_swaps_last_24h = []
 
             try:
                 lowest_ask  = min([float(x['price']) for x in pair_orderbook["asks"]])
@@ -60,6 +64,7 @@ def fetch_summary_data():
                     swap_price = float(first_event["data"]["taker_amount"]) / float(first_event["data"]["maker_amount"])
                     # 24h volume and price calculating price
                     if swap_timestamp > timestamp_24h_ago:
+                        pair_swaps_last_24h.append(swap)
                         base_volume_24h  += float(first_event["data"]["maker_amount"])
                         quote_volume_24h += float(first_event["data"]["taker_amount"])
                         if swap_price > highest_price_24h:
@@ -107,8 +112,24 @@ def fetch_summary_data():
 
             for ask in pair_orderbook["asks"]:
                 orderbook_data_pair[pair[0] + "_" + pair[1]]["bids"].append([ask["price"], ask["maxvolume"]])
-                
+
             orderbook_data.append(orderbook_data_pair)
+
+            trades_data_pair = {pair[0] + "_" + pair[1]: []}
+
+            for swap in pair_swaps_last_24h:
+                first_event = swap["events"][0]["event"]
+                trades_data_pair[pair[0] + "_" + pair[1]].append({
+                    "trade_id": swap["uuid"],
+                    "price": float(first_event["data"]["taker_amount"]) / float(first_event["data"]["maker_amount"]),
+                    "base_volume": float(first_event["data"]["maker_amount"]),
+                    "quote_volume": float(first_event["data"]["taker_amount"]),
+                    "timestamp": swap["events"][0]["timestamp"] // 1000,
+                    #TODO: a bit confused here, probably directions like a DEX/KMD KMD/DEX needs to be combined to determine buys/sells
+                    "type": "buy"
+                })
+
+            trades_data.append(trades_data_pair)
 
     with open('summary.json', 'w') as f:
         json.dump(summary_endpoint_data, f)
@@ -118,6 +139,9 @@ def fetch_summary_data():
 
     with open('orderbook_data.json', 'w') as f:
         json.dump(orderbook_data, f)
+
+    with open('trades.json', 'w') as f:
+        json.dump(trades_data, f)
 
 
 fetch_summary_data()
