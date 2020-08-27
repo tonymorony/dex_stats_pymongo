@@ -13,7 +13,7 @@ def summary():
     return jsonify(data)
 
 @app.route('/api/v1/ticker', methods=['GET'])
-def summary():
+def ticker():
     with open('ticker.jsonn') as json_file:
         data = json.load(json_file)
     return jsonify(data)
