@@ -121,7 +121,8 @@ def fetch_summary_data():
                 first_event = swap["events"][0]["event"]
                 trades_data_pair[pair[0] + "_" + pair[1]].append({
                     "trade_id": swap["uuid"],
-                    "price": float(first_event["data"]["taker_amount"]) / float(first_event["data"]["maker_amount"]),
+                    "price": format(float(first_event["data"]["taker_amount"]) 
+                                    / float(first_event["data"]["maker_amount"]),'.10f'),
                     "base_volume": float(first_event["data"]["maker_amount"]),
                     "quote_volume": float(first_event["data"]["taker_amount"]),
                     "timestamp": swap["events"][0]["timestamp"] // 1000,
