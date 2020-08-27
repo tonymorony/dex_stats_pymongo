@@ -1,4 +1,5 @@
 import datetime
+import time
 import itertools
 import json
 from db_connector import MongoAPI
@@ -17,6 +18,7 @@ db_connection = MongoAPI()
 def fetch_summary_data():
     summary_endpoint_data = []
     ticker_endpoint_data = []
+    orderbook_data = []
 
     for pair in possible_pairs:
 
@@ -92,15 +94,25 @@ def fetch_summary_data():
                          "lowest_ask": format(lowest_ask, '.10f'), "highest_bid": format(highest_bid, '.10f')}
             summary_endpoint_data.append(pair_data)
 
-            ticker_data = {pair[0] + "_" + pair[1]: {"last_price": last_swap_price, "base_volume": base_volume_24h,
+            ticker_data_pair = {pair[0] + "_" + pair[1]: {"last_price": last_swap_price, "base_volume": base_volume_24h,
                                                      "quote_volume": quote_volume_24h}}
-            ticker_endpoint_data.append(ticker_data)
+            ticker_endpoint_data.append(ticker_data_pair)
+
+            orderbook_data_pair = {pair[0] + "_" + pair[1]: {"timestamp": int(round(time.time() * 1000)),
+                                                             # TODO: sort orders
+                                                             "bids": pair_orderbook["bids"],
+                                                             "asks": pair_orderbook["asks"]}}
+
+            orderbook_data.append(orderbook_data_pair)
 
     with open('summary.json', 'w') as f:
         json.dump(summary_endpoint_data, f)
 
     with open('ticker.json', 'w') as f:
         json.dump(ticker_endpoint_data, f)
+
+    with open('orderbook_data.json', 'w') as f:
+        json.dump(orderbook_data, f)
 
 
 fetch_summary_data()
