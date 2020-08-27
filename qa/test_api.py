@@ -10,7 +10,7 @@ class TestAPI:
             'type': 'array',
             'items': {
                 'type': 'object',
-                'propertyNames': {'pattern': r"\A[A-Z]+-[A-Z]+\Z"},
+                'propertyNames': {'pattern': r"\A[A-Z0-9]+_[A-Z0-9]+\Z"},
                 'patternProperties': {"": {
                     'type': 'object',
                     'properties': {
@@ -21,11 +21,11 @@ class TestAPI:
                 }
             }
         }
-        header = {"accept: application/json"}
+        header = {'accept': 'application/json'}
         url = ("http://" + test_params.get('ip') + ':' +
-               test_params.get('port') + "api/v1/ticker")
+               test_params.get('port') + "/api/v1/ticker")
         res = requests.get(url, headers=header)
-        assert validate_template(res, schema_ticker)
+        assert validate_template(res.json(), schema_ticker)
 
     def test_summary_call(self, test_params):
         schema_summary = {
@@ -34,7 +34,7 @@ class TestAPI:
                 'type': 'object',
                 'properties': {
                     'base_currency': {'type': 'string',
-                                      'pattern': r"\A[A-Z]+\Z"},
+                                      'pattern': r"\A[A-Z0-9]+\Z"},
                     'base_volume_24h': {'type': ['integer', 'number']},
                     'highest_bid': {'type': 'string'},
                     'highest_price_24h': {'type': 'string'},
@@ -44,23 +44,23 @@ class TestAPI:
                     'lowest_price_24h': {'type': 'string'},
                     'price_change_percent_24h': {'type': 'string'},
                     'quote_currency': {'type': 'string',
-                                       'pattern': r"\A[A-Z]+\Z"},
+                                       'pattern': r"\A[A-Z0-9]+\Z"},
                     'quote_volume_24h': {'type': ['integer', 'number']},
                     'trading_pair': {'type': 'string',
-                                     'pattern': r"\A[A-Z]+_[A-Z]+\Z"}
+                                     'pattern': r"\A[A-Z0-9]+_[A-Z0-9]+\Z"}
                 }
             }
         }
-        header = {"accept: application/json"}
+        header = {'accept': 'application/json'}
         url = ("http://" + test_params.get('ip') + ':' +
-               test_params.get('port') + "api/v1/summary")
+               test_params.get('port') + "/api/v1/summary")
         res = requests.get(url, headers=header)
-        assert validate_template(res, schema_summary)
+        assert validate_template(res.json(), schema_summary)
 
     def test_orderbook_call(self, test_params):
         schema_orderbook = {
             'type': 'object',
-            'propertyNames': {'pattern': r"\A[A-Z]+_[A-Z]+\Z"},
+            'propertyNames': {'pattern': r"\A[A-Z0-9]+_[A-Z0-9]+\Z"},
             'patternProperties': {"": {
                 'type': 'object',
                 'properties': {
@@ -70,7 +70,7 @@ class TestAPI:
                             'type': 'array',
                             'items': {
                                 'type': 'string',
-                                'pattern': r"\A[0-9]+.[0-9]+\Z"
+                                'pattern': r"\A[0-9]+.[0-9]+|[0-9]+\Z"
                             },
                             'additionalItems': False,
                             'minItems': 2,
@@ -83,7 +83,7 @@ class TestAPI:
                             'type': 'array',
                             'items': {
                                 'type': 'string',
-                                'pattern': r"\A[0-9]+.[0-9]+\Z"
+                                'pattern': r"\A[0-9]+.[0-9]+|[0-9]+\Z"
                             },
                             'additionalItems': False,
                             'minItems': 2,
@@ -98,16 +98,16 @@ class TestAPI:
             }
         }
         pair = test_params.get('base') + '_' + test_params.get('rel')
-        header = {"accept: application/json"}
+        header = {'accept': 'application/json'}
         url = ("http://" + test_params.get('ip') + ':' +
-               test_params.get('port') + "api/v1/orderbook/" + pair)
+               test_params.get('port') + "/api/v1/orderbook/" + pair)
         res = requests.get(url, headers=header)
-        assert validate_template(res, schema_orderbook)
+        assert validate_template(res.json(), schema_orderbook)
 
     def test_trades_call(self, test_params):
         schema_trades = {
             'type': 'object',
-            'propertyNames': {'pattern': r"\A[A-Z]+_[A-Z]+\Z"},
+            'propertyNames': {'pattern': r"\A[A-Z0-9]+_[A-Z0-9]+\Z"},
             'patternProperties': {"": {
                 'type': 'array',
                 'items': {
@@ -134,8 +134,8 @@ class TestAPI:
             }
         }
         pair = test_params.get('base') + '_' + test_params.get('rel')
-        header = {"accept: application/json"}
+        header = {'accept': 'application/json'}
         url = ("http://" + test_params.get('ip') + ':' +
-               test_params.get('port') + "api/v1/trades/" + pair)
+               test_params.get('port') + "/api/v1/trades/" + pair)
         res = requests.get(url, headers=header)
-        assert validate_template(res, schema_trades)
+        assert validate_template(res.json(), schema_trades)
