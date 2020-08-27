@@ -100,9 +100,14 @@ def fetch_summary_data():
 
             orderbook_data_pair = {pair[0] + "_" + pair[1]: {"timestamp": int(round(time.time() * 1000)),
                                                              # TODO: sort orders
-                                                             "bids": pair_orderbook["bids"],
-                                                             "asks": pair_orderbook["asks"]}}
+                                                             "bids": [],
+                                                             "asks": []}}
+            for bid in pair_orderbook["bids"]:
+                orderbook_data_pair[pair[0] + "_" + pair[1]]["bids"].append([bid["price"], bid["maxvolume"]])
 
+            for ask in pair_orderbook["asks"]:
+                orderbook_data_pair[pair[0] + "_" + pair[1]]["bids"].append([ask["price"], ask["maxvolume"]])
+                
             orderbook_data.append(orderbook_data_pair)
 
     with open('summary.json', 'w') as f:
