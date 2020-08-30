@@ -6,13 +6,31 @@ from db_connector import MongoAPI
 from utils import adex_calls
 
 
+# TODO: do it only once on startup -> save to file on shutdown
+def find_unique_pairs():
+    # TODO: lookup for local file with pairs
+    db_con = MongoAPI()
+    key = 'maker_coin'
+    pairs = []
+    maker_options = db_con.swaps_collection.distinct(key)
+    for maker_coin in maker_options:
+        if maker_coin:  # prevents NoneType calls
+            swaps = list(db_con.swaps_collection.find({"maker_coin": maker_coin}))
+            for swap in swaps:
+                taker_coin = swap.get('taker_coin')
+                pair = (maker_coin + "_" + taker_coin)
+                pairs.append(pair)
+    return set(pairs)
+
+
 adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL", "CHIPS", "CRYPTO", "DAI", "DASH",
                 "DEX", "DGB", "DOGE", "ECA", "EMC2", "ETH", "FTC", "HUSH", "ILN", "JUMBLR", "KMD", "LABS", "LTC",
                 "MCL", "MGW", "MORTY", "NAV", "OOT", "PANGEA", "PAX", "QTUM", "REVS", "RFOX", "RICK", "RVN",
                 "SUPERNET", "TUSD", "USDC", "VRSC", "XZC", "ZEC", "ZER"]
 
-# 45 tickers atm = 1980 pairs
-possible_pairs = list(itertools.permutations(adex_tickers, 2))
+# 45 tickers atm = 1980 pairs // 283 in db as of 09.27
+# possible_pairs = list(itertools.permutations(adex_tickers, 2))
+possible_pairs = find_unique_pairs()
 db_connection = MongoAPI()
 
 
