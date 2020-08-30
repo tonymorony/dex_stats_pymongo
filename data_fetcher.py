@@ -3,6 +3,7 @@ import time
 import itertools
 import json
 from db_connector import MongoAPI
+from decimal import *
 from utils import adex_calls
 
 
@@ -18,7 +19,7 @@ def find_unique_pairs():
             swaps = list(db_con.swaps_collection.find({"maker_coin": maker_coin}))
             for swap in swaps:
                 taker_coin = swap.get('taker_coin')
-                pair = (maker_coin + "_" + taker_coin)
+                pair = (maker_coin, taker_coin)
                 pairs.append(pair)
     return set(pairs)
 
@@ -30,7 +31,7 @@ adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL",
 
 # 45 tickers atm = 1980 pairs // 283 in db as of 09.27
 # possible_pairs = list(itertools.permutations(adex_tickers, 2))
-possible_pairs = find_unique_pairs()
+possible_pairs = find_unique_pairs()  # ~25s vs ~207 for above
 db_connection = MongoAPI()
 
 
