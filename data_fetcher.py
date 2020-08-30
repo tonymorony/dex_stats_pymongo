@@ -3,23 +3,8 @@ import time
 import json
 from db_connector import MongoAPI
 from utils import adex_calls
-
-
-# TODO: do it only once on startup -> save to file on shutdown
-def find_unique_pairs():
-    # TODO: lookup for local file with pairs
-    db_con = MongoAPI()
-    key = 'maker_coin'
-    pairs = []
-    maker_options = db_con.swaps_collection.distinct(key)
-    for maker_coin in maker_options:
-        if maker_coin:  # prevents NoneType calls
-            swaps = list(db_con.swaps_collection.find({"maker_coin": maker_coin}))
-            for swap in swaps:
-                taker_coin = swap.get('taker_coin')
-                pair = (maker_coin, taker_coin)
-                pairs.append(pair)
-    return set(pairs)
+from utils.util_funct import find_unique_pairs as get_pairs
+from utils.util_funct import enforce_float_type as enforce
 
 
 # adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL", "CHIPS", "CRYPTO", "DAI", "DASH",
@@ -29,7 +14,7 @@ def find_unique_pairs():
 #
 # 45 tickers atm = 1980 pairs // 283 in db as of 09.27
 # possible_pairs = list(itertools.permutations(adex_tickers, 2))
-possible_pairs = find_unique_pairs()  # ~25s execution vs ~207s for above
+possible_pairs = get_pairs()  # ~25s execution vs ~207s for above
 db_connection = MongoAPI()
 
 
@@ -114,21 +99,21 @@ def fetch_summary_data():
             pair_data = {"trading_pair": pair[0] + "_" + pair[1],
                          "base_currency": pair[0],
                          "quote_currency": pair[1],
-                         "last_price": float("{:.10f}".format(last_price)),
+                         "last_price": enforce(last_price),
                          "last_trade_time": last_timestamp,
-                         "base_volume_24h": float("{:.10f}".format(base_volume_24h)),
-                         "quote_volume_24h": float("{:.10f}".format(quote_volume_24h)),
-                         "highest_price_24h": float("{:.10f}".format(highest_price_24h)),
-                         "lowest_price_24h": float("{:.10f}".format(lowest_price_24h)),
-                         "price_change_percent_24h": float("{:.10f}".format(price_change_percent_24h)),
-                         "lowest_ask": float("{:.10f}".format(lowest_ask)),
-                         "highest_bid": float("{:.10f}".format(highest_bid))}
+                         "base_volume_24h": enforce(base_volume_24h),
+                         "quote_volume_24h": enforce(quote_volume_24h),
+                         "highest_price_24h": enforce(highest_price_24h),
+                         "lowest_price_24h": enforce(lowest_price_24h),
+                         "price_change_percent_24h": enforce(price_change_percent_24h),
+                         "lowest_ask": enforce(lowest_ask),
+                         "highest_bid": enforce(highest_bid)}
             summary_endpoint_data.append(pair_data)
 
             ticker_data_pair = {pair[0] + "_" + pair[1]: {
-                "last_price": float("{:.10f}".format(last_swap_price)),
-                "base_volume": float("{:.10f}".format(base_volume_24h)),
-                "quote_volume": float("{:.10f}".format(quote_volume_24h))
+                "last_price": enforce(last_swap_price),
+                "base_volume": enforce(base_volume_24h),
+                "quote_volume": enforce(quote_volume_24h)
             }}
             ticker_endpoint_data.append(ticker_data_pair)
 
@@ -152,12 +137,11 @@ def fetch_summary_data():
                 first_event = swap["events"][0]["event"]
                 trades_data_pair[pair[0] + "_" + pair[1]].append({
                     "trade_id": swap["uuid"],
-                    "price": float("{:.10f}".format(
-                             (float(first_event["data"]["taker_amount"])
-                              / float(first_event["data"]["maker_amount"]))
-                    )),
-                    "base_volume": float("{:.10f}".format(float(first_event["data"]["maker_amount"]))),
-                    "quote_volume": float("{:.10f}".format(float(first_event["data"]["taker_amount"]))),
+                    "price": enforce(
+                              float(first_event["data"]["taker_amount"])
+                              / float(first_event["data"]["maker_amount"])),
+                    "base_volume": enforce(float(first_event["data"]["maker_amount"])),
+                    "quote_volume": enforce(float(first_event["data"]["taker_amount"])),
                     "timestamp": int(swap["events"][0]["timestamp"] // 1000),
                     #TODO: a bit confused here, probably directions like a DEX/KMD KMD/DEX needs to be combined to determine buys/sells
                     "type": "buy"
