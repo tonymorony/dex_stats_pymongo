@@ -43,16 +43,16 @@ def fetch_summary_data():
             last_swap_price = 0
             lowest_ask = 0
             highest_bid = 0
-            timestamp_24h_ago = int((datetime.date.today() - datetime.timedelta(1)).strftime("%s"))
-            pair_orderbook = json.loads(adex_calls.get_orderbook("http://127.0.0.1:7783", "testuser", pair[0], pair[1]).text)
+            timestamp_24h_ago = int((datetime.date.today() - datetime.timedelta(1)).strftime("%S"))
+            #pair_orderbook = json.loads(adex_calls.get_orderbook("http://127.0.0.1:7783", "testuser", pair[0], pair[1]).text)
             pair_swaps_last_24h = []
 
-            try:
-                lowest_ask  = min([float(x['price']) for x in pair_orderbook["asks"]])
-                highest_bid = max([float(x['price']) for x in pair_orderbook["bids"]])
-            # TODO: proper handling of empty bid/asks
-            except Exception:
-                 pass
+            #try:
+            #    lowest_ask  = min([float(x['price']) for x in pair_orderbook["asks"]])
+            #    highest_bid = max([float(x['price']) for x in pair_orderbook["bids"]])
+            ## TODO: proper handling of empty bid/asks
+            #except Exception:
+            #     pass
 
             for swap in pair_swaps:
                 # TODO: make a get_price funciton or maybe it worth to add on DB population stage
@@ -107,11 +107,11 @@ def fetch_summary_data():
                                                              # TODO: sort orders
                                                              "bids": [],
                                                              "asks": []}}
-            for bid in pair_orderbook["bids"]:
-                orderbook_data_pair[pair[0] + "_" + pair[1]]["bids"].append([bid["price"], bid["maxvolume"]])
-
-            for ask in pair_orderbook["asks"]:
-                orderbook_data_pair[pair[0] + "_" + pair[1]]["bids"].append([ask["price"], ask["maxvolume"]])
+            #for bid in pair_orderbook["bids"]:
+            #    orderbook_data_pair[pair[0] + "_" + pair[1]]["bids"].append([bid["price"], bid["maxvolume"]])
+#
+            #for ask in pair_orderbook["asks"]:
+            #    orderbook_data_pair[pair[0] + "_" + pair[1]]["bids"].append([ask["price"], ask["maxvolume"]])
 
             orderbook_data.append(orderbook_data_pair)
 

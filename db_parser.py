@@ -7,8 +7,8 @@ client = MongoClient('mongodb://localhost:27017/')
 
 db = client['swaps']
 
-maker_folder_path = "DB/<pubkey>/SWAPS/STATS/MAKER/"
-taker_folder_path = "DB/<pubkey>/SWAPS/STATS/TAKER/"
+maker_folder_path = r"F:\seed_db\64ae8510aac9546d5e7704e31ce1774513864555\SWAPS\STATS\MAKER\\"
+taker_folder_path = r"F:\seed_db\64ae8510aac9546d5e7704e31ce1774513864555\SWAPS\STATS\TAKER\\"
 
 maker_files_list = [pos_json for pos_json in os.listdir(maker_folder_path) if pos_json.endswith('.json')]
 taker_files_list = [pos_json for pos_json in os.listdir(taker_folder_path) if pos_json.endswith('.json')]
