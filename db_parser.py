@@ -78,6 +78,8 @@ class DB_Parser():
         self.client = MongoClient('mongodb://{}:{}/'.format(mongo_ip, mongo_port))
         self.swaps = self.client.swaps
 
+        self.is_fresh_run = not bool(self.swaps.list_collection_names())
+
         #creating main successful/failed collections
         if self.save_failed:
             self.failed = self.swaps.failed_swaps_collection
@@ -196,21 +198,13 @@ class DB_Parser():
                                   in os.listdir(self.taker_folder_path)
                                   if x.endswith('.json') ]
     
-
-    # hmmm do we really need to know this?
-    def is_db_fresh(self):
-        return not bool(self.swaps.list_collection_names())
-
-
+    
     def check_connection_to_mongo(self):
         return self.swaps
 
 
-
     ### SWAP FILES PARSING FUNCTIONS
-
     @measure
-    
     def parse_swap_data(self, path_to_swap_json : str):
         """Parses json from filepath and (returns : dict)"""
         with open(path_to_swap_json) as f:
@@ -268,7 +262,7 @@ class DB_Parser():
         try:
             return {
                     'uuid' : swap['uuid'],
-                    'timestamp' : swap['events'][-1:]['timestamp'],
+                    'timestamp' : swap['events'][0]['timestamp'],
                     'found_match' : False
                     }
         except KeyError:
@@ -290,37 +284,90 @@ class DB_Parser():
 
     # PYMONGO INPUT FUNCTIONS
     @measure
-    def insert_traiding_pair_into_collection(self, swap : dict):
+    def insert_into_traiding_pair_collection(self, swap : dict):
         logging.debug('parsing of traiding pair: STARTED')
         data = self.parse_traiding_pair(swap)
 
-        logging.debug('insertion into DB: STARTED')
+        logging.debug('insertion into top_pairs_collection: STARTED')
         result = self.pairs.find_one_and_update(data, 
                                                 {
-                                                    '$inc': {'count': 1 },
-                                                    '$setOnInsert' : { 'count' : 1 }
+                                                    '$inc' : { 'count': 1 }
                                                 },
-                                                upsert=True, 
-                                                return_document=ReturnDocument.AFTER
+                                                upsert=True
+                                                #return_document=ReturnDocument.AFTER
                                                 )
-        
         logging.debug('New entry --> {}'.format(result))
         if not result:
             logging.debug('something wrong with insertion --> {}'.format(data))
-        return data
+        #return data #not sure if we need this yet...
 
 
+    @measure
     def insert_into_uuid_collection(self, swap : dict):
         logging.debug('parsing of uuid and timestamp: STARTED')
         data = self.parse_uuid(swap)
-        pass
 
-    def insert_swap_into_db(self, swap):
-        #is_swap_successful(swap)
-        pass
+        logging.debug('insertion into uuids_with_timestamp_collection: STARTED')
+        if self.is_fresh_run:
+            result = self.uuids.insert(data)
+        # TODO: can speedup this process if keep files list from previous run and make update requests only for new
+        else:
+            result = self.uuids.find_one_and_update({"uuid": data["uuid"]},
+                                                    {
+                                                        '$set' : { 'found_match' : True }
+                                                    },
+                                                    upsert=True)
+        logging.debug('New entry --> {}'.format(result))
+        if not result:
+            logging.debug('something wrong with insertion --> {}'.format(data))
+        #return data #not sure if we need this yet...
+
+
+    @measure
+    def insert_swap_into_collection(self, swap_file : str, maker : bool):
+        if maker:
+            swap_folder_path = self.maker_folder_path
+        else:
+            swap_folder_path = self.taker_folder_path
     
-    def loop_through_all_swaps_in_directory(self):
-        pass
+        logging.debug('insertion into collection: PREPARATION\n reading swap file {}'.format(swap_folder_path + swap_file))
+        raw_swap_data = self.parse_swap_data(swap_folder_path + swap_file)
+
+        logging.debug('checking if swap was successful')
+        is_swap_successful = self.is_swap_successful(raw_swap_data)
+
+        self.insert_into_traiding_pair_collection(raw_swap_data)
+        self.insert_into_uuid_collection(raw_swap_data)
+
+        logging.debug('insertion into collection: STARTED')
+        if self.is_fresh_run and is_swap_successful:
+            self.successful.insert(raw_swap_data)
+        elif not self.is_fresh_run and is_swap_successful:
+            self.successful.update({"uuid": raw_swap_data["uuid"]}, raw_swap_data, upsert=True)
+        elif self.is_fresh_run and not is_swap_successful:
+            self.failed.insert(raw_swap_data)
+        else:
+            self.failed.update({"uuid": raw_swap_data["uuid"]}, raw_swap_data, upsert=True)
+        logging.debug('insertion into collection: FINISHED')
+
+
+    @measure
+    def loop_through_all_swap_files_in_folder(self, maker : bool):
+        if maker:
+            self.create_maker_files_pool()
+            swap_files_pool = self.maker_files_pool
+        else:
+            self.create_taker_files_pool()
+            swap_files_pool = self.taker_files_pool
+        
+        for swap_file in swap_files_pool:
+            self.insert_swap_into_collection(swap_file, maker)
+        
+        if self.is_fresh_run:
+            resp = self.successful.create_index([ ("uuid", 1) ])
+            logging.debug('creating index for successful collection --> {}'.format(resp))
+            resp = self.failed.create_index([ ("uuid", 1) ])
+            logging.debug('creating index for failed collection --> {}'.format(resp))
 
 """
 #@measure('parse_maker_swaps/')
