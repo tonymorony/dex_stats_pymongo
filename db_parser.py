@@ -2,6 +2,12 @@
 from gevent import monkey
 _ = monkey.patch_all()
 
+
+from utils.swap_events import (maker_swap_success_events,
+                               taker_swap_success_events,
+                               maker_swap_error_events,
+                               taker_swap_error_events)
+
 from pymongo import MongoClient, ReturnDocument
 from functools import wraps
 from timeit import timeit
@@ -45,8 +51,7 @@ class DB_Parser():
                  save_failed=True,    save_successful=True,
                  data_analysis=False, use_swap_events=True,
                  mongo_port=27017,    mongo_ip='localhost',
-                 maker_folder_path="../SWAPS/STATS/MAKER/",
-                 taker_folder_path="../SWAPS/STATS/TAKER/"):
+                 swaps_folder_path="../SWAPS/STATS/"):
         #maker_folder_path = "DB/<pubkey>/SWAPS/STATS/MAKER/"
         #taker_folder_path = "DB/<pubkey>/SWAPS/STATS/TAKER/"
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -66,18 +71,21 @@ class DB_Parser():
         # Parser config
         self.parse_maker = parse_maker
         self.parse_taker = parse_taker
-        self.async_mode = async_mode
+        self.async_mode  = async_mode
         self.save_failed = save_failed
         self.parse_pairs = parse_pairs
-        self.data_analysis = data_analysis
+        self.data_analysis   = data_analysis
         self.use_swap_events = use_swap_events
         self.save_successful = save_successful
-        self.maker_folder_path = maker_folder_path
-        self.taker_folder_path = taker_folder_path
+        self.swaps_folder_path = swaps_folder_path
+        self.maker_folder_path = swaps_folder_path + 'MAKER/'
+        self.taker_folder_path = swaps_folder_path + 'TAKER/'
 
         #init mongo client connection and create swaps db
         self.client = MongoClient('mongodb://{}:{}/'.format(mongo_ip, mongo_port))
-        self.swaps = self.client.swaps
+        self.swaps = self.client.swaps0_with_generator_pool
+
+        self.is_fresh_run = not bool(self.swaps.list_collection_names())
 
         #creating main successful/failed collections
         if self.save_failed:
@@ -98,60 +106,12 @@ class DB_Parser():
         if self.data_analysis:
             self.data = self.swaps.data_analysis_collection
 
-        #enabling swap events navigation
+        #enabling swap events for validation of successful/failed swaps
         if self.use_swap_events:
-            self.maker_swap_success_events = [
-                "Started",
-                "Negotiated",
-                "TakerFeeValidated",
-                "MakerPaymentSent",
-                "TakerPaymentReceived",
-                "TakerPaymentWaitConfirmStarted",
-                "TakerPaymentValidatedAndConfirmed",
-                "TakerPaymentSpent",
-                "Finished"
-            ]
-
-            self.taker_swap_success_events = [
-                "Started",
-                "Negotiated",
-                "TakerFeeSent",
-                "MakerPaymentReceived",
-                "MakerPaymentWaitConfirmStarted",
-                "MakerPaymentValidatedAndConfirmed",
-                "TakerPaymentSent",
-                "TakerPaymentSpent",
-                "MakerPaymentSpent",
-                "Finished"
-            ]
-
-            self.maker_swap_error_events = [
-                "StartFailed",
-                "NegotiateFailed",
-                "TakerFeeValidateFailed",
-                "MakerPaymentTransactionFailed",
-                "MakerPaymentDataSendFailed",
-                "TakerPaymentValidateFailed",
-                "TakerPaymentSpendFailed",
-                "MakerPaymentRefunded",
-                "MakerPaymentRefundFailed"
-            ]
-
-            self.taker_swap_error_events = [
-                "StartFailed",
-                "NegotiateFailed",
-                "TakerFeeSendFailed",
-                "MakerPaymentValidateFailed",
-                "MakerPaymentWaitConfirmFailed",
-                "TakerPaymentTransactionFailed",
-                "TakerPaymentWaitConfirmFailed",
-                "TakerPaymentDataSendFailed",
-                "TakerPaymentWaitForSpendFailed",
-                "MakerPaymentSpendFailed",
-                "TakerPaymentWaitRefundStarted",
-                "TakerPaymentRefunded",
-                "TakerPaymentRefundFailed"
-            ]
+            self.maker_swap_success_events = maker_swap_success_events
+            self.taker_swap_success_events = taker_swap_success_events
+            self.maker_swap_error_events = maker_swap_error_events
+            self.taker_swap_error_events = taker_swap_error_events
 
 
     def __str__(self):
@@ -161,8 +121,16 @@ class DB_Parser():
                                                 self.data_analysis)
         return config
 
+    
+    #Generator test
+    #@measure
+    def create_files_pool_with_abs_path(self):
+        for dirpath,_,filenames in os.walk(self.swaps_folder_path):
+            for f in filenames:
+                if f.endswith('.json'):
+                    yield os.path.abspath(os.path.join(dirpath, f))
 
-    # ~ 40-50ms each
+
     @measure
     def create_maker_files_pool(self):
         self.maker_files_pool = [ x
@@ -171,7 +139,6 @@ class DB_Parser():
                                   if x.endswith('.json') ]
 
 
-    @measure
     def create_taker_files_pool(self):
         self.taker_files_pool = [ x
                                   for x
@@ -179,7 +146,7 @@ class DB_Parser():
                                   if x.endswith('.json') ]
 
 
-    #TODO: parse uuids, if there are new uuids, update else do nothing
+    #TODO: parse uuids, if there are new uuids, update, else do nothing
     #      also could be good to save last timestamp or check only for
     #      swaps that happen/created in the last 24h
     @measure
@@ -194,14 +161,9 @@ class DB_Parser():
     def update_taker_files_pool(self):
         self.taker_files_pool = [ x
                                   for x
-                                  in os.listdir(self.taker_folder_path)
+                                  in os.listdir(self.swaps_folder_path)
                                   if x.endswith('.json') ]
-
-
-    # hmmm do we really need to know this?
-    def is_db_fresh(self):
-        return not bool(self.swaps.list_collection_names())
-
+    
 
     def check_connection_to_mongo(self):
         return self.swaps
@@ -210,40 +172,35 @@ class DB_Parser():
 
     ### SWAP FILES PARSING FUNCTIONS
 
-    @measure
-
+    
     def parse_swap_data(self, path_to_swap_json : str):
         """Parses json from filepath and (returns : dict)"""
         with open(path_to_swap_json) as f:
             return json.load(f)
 
 
-    @measure
     def parse_swap_events(self, swap : dict):
         """Parses (swap : dict) and (returns : list) of swap events."""
         return [ x['event']['type'] for x in swap['events'] ]
 
 
-    @measure
     def is_swap_finished(self, swap_events : list):
         """Checks if (swap_events : list) has Finished event (returns : bool). """
         return True if 'Finished' in swap_events else False
 
 
-    @measure
     def is_swap_successful(self, swap_events : list):
         """Checks if swap has Finished successfully, (returns : bool). """
         return True if (swap_events == self.maker_swap_success_events or
                         swap_events == self.taker_swap_success_events) else False
 
 
-    @measure
     def parse_traiding_pair(self, swap : dict):
         try:
             return {
                     'maker_coin' : swap['maker_coin'],
                     'taker_coin' : swap['taker_coin'],
-                    'count' : 0
+                    'count' : 1
                     }
         except KeyError:
             try:
@@ -251,25 +208,23 @@ class DB_Parser():
                 return {
                         'maker_coin' : start_event_data['maker_coin'],
                         'taker_coin' : start_event_data['taker_coin'],
-                        'count' : 0
+                        'count' : 1
                         }
             except KeyError:
-                logging.debug('this swap hides somewhere maker and taker '
-                              'coins/amount --> {}'.format(swap['uuid']))
+                pass
         return {
                 'maker_coin' : 'None',
                 'taker_coin' : 'None',
-                'count' : 0
+                'count' : 1
                 }
 
 
-    @measure
     def parse_uuid(self, swap : dict):
-        """ Trying to get Finished event timestamp first """
+        """ Trying to get Started event timestamp first """
         try:
             return {
                     'uuid' : swap['uuid'],
-                    'timestamp' : swap['events'][-1:]['timestamp'],
+                    'timestamp' : swap['events'][0]['timestamp'],
                     'found_match' : False
                     }
         except KeyError:
@@ -281,7 +236,6 @@ class DB_Parser():
                     }
 
 
-    @measure
     def parse_swap_type(self, swap : dict):
         try:
             return swap['type']
@@ -290,38 +244,94 @@ class DB_Parser():
 
 
     # PYMONGO INPUT FUNCTIONS
-    @measure
-    def insert_traiding_pair_into_collection(self, swap : dict):
+    #@measure
+    def insert_into_traiding_pair_collection(self, swap : dict):
         logging.debug('parsing of traiding pair: STARTED')
         data = self.parse_traiding_pair(swap)
 
-        logging.debug('insertion into DB: STARTED')
+        logging.debug('insertion into top_pairs_collection: STARTED')
         result = self.pairs.find_one_and_update(data,
                                                 {
-                                                    '$inc': {'count': 1 },
-                                                    '$setOnInsert' : { 'count' : 1 }
+                                                    '$inc' : { 'count': 1 }
                                                 },
-                                                upsert=True,
-                                                return_document=ReturnDocument.AFTER
+                                                upsert=True
+                                                #return_document=ReturnDocument.AFTER
                                                 )
-
         logging.debug('New entry --> {}'.format(result))
-        if not result:
-            logging.debug('something wrong with insertion --> {}'.format(data))
-        return data
+        #return data #not sure if we need this yet...
 
 
+    #@measure
     def insert_into_uuid_collection(self, swap : dict):
         logging.debug('parsing of uuid and timestamp: STARTED')
         data = self.parse_uuid(swap)
-        pass
 
-    def insert_swap_into_db(self, swap):
-        #is_swap_successful(swap)
-        pass
+        logging.debug('insertion into uuids_with_timestamp_collection: STARTED')
+        if self.is_fresh_run:
+            result = self.uuids.insert(data)
+        else:
+            result = self.uuids.find_one_and_update({"uuid": data["uuid"]},
+                                                    {
+                                                        '$set' : { 'found_match' : True }
+                                                    },
+                                                    upsert=True)
+        logging.debug('New entry --> {}'.format(result))
+        if not result:
+            logging.debug('something wrong with insertion --> {}'.format(data))
+        #return data #not sure if we need this yet...
 
-    def loop_through_all_swaps_in_directory(self):
-        pass
+
+    @measure
+    def insert_into_swap_collection(self, swap_file : str):
+        logging.debug('\n\nInsertion into collection:\n  reading swap file {}'.format(swap_file))
+        raw_swap_data = self.parse_swap_data(swap_file)
+        swap_events = self.parse_swap_events(raw_swap_data)
+
+        is_swap_successful = self.is_swap_successful(swap_events)
+        logging.debug('Checking if swap was successful ----> {}'.format(is_swap_successful))
+        
+        #commented out for now since takes to much time
+        #self.insert_into_traiding_pair_collection(raw_swap_data)
+        #self.insert_into_uuid_collection(raw_swap_data)
+
+        if self.is_fresh_run and is_swap_successful:
+            self.successful.insert(raw_swap_data)
+        elif self.is_fresh_run and not is_swap_successful:
+            self.failed.insert(raw_swap_data)
+        elif not self.is_fresh_run and is_swap_successful:
+            self.successful.update({"uuid": raw_swap_data["uuid"]}, raw_swap_data, upsert=True)
+        else:
+            self.failed.update({"uuid": raw_swap_data["uuid"]}, raw_swap_data, upsert=True)
+        logging.debug('Insertion into collection: DONE')
+
+
+    @measure
+    def loop_through_all_swap_files(self):
+        '''
+        self.create_maker_files_pool()
+        self.create_taker_files_pool()
+        
+        maker_files_pool = self.maker_files_pool
+        taker_files_pool = self.taker_files_pool
+        '''
+        swap_files_pool = self.create_files_pool_with_abs_path()
+        for swap_file in swap_files_pool:
+            self.insert_into_swap_collection(swap_file)
+        
+        #self.is_fresh_run = False
+
+        #for swap_file in taker_files_pool:
+        #    self.insert_into_swap_collection(self.taker_folder_path + swap_file)
+
+        
+        """
+        if self.is_fresh_run:
+            resp = self.successful.create_index([ ("uuid", 1) ])
+            logging.debug('creating index for successful collection --> {}'.format(resp))
+            resp = self.failed.create_index([ ("uuid", 1) ])
+            logging.debug('creating index for failed collection --> {}'.format(resp))
+        """
+
 
 """
 #@measure('parse_maker_swaps/')
