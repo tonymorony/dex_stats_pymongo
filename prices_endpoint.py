@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import flask
 import json
 from flask import jsonify, request
@@ -51,4 +52,3 @@ class Trades(Resource):
 if __name__ == '__main__':
     #logging.basicConfig(filename='/var/log/dex_prices_endpoint.log',level=logging.DEBUG)
     app.run(host='0.0.0.0', port=8080)
-

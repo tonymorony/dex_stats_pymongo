@@ -1,18 +1,20 @@
 import datetime
 import time
-import itertools
 import json
 from db_connector import MongoAPI
 from utils import adex_calls
+from utils.util_funct import find_unique_pairs as get_pairs
+from utils.util_funct import enforce_float_type as enforce
 
 
-adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL", "CHIPS", "CRYPTO", "DAI", "DASH",
-                "DEX", "DGB", "DOGE", "ECA", "EMC2", "ETH", "FTC", "HUSH", "ILN", "JUMBLR", "KMD", "LABS", "LTC",
-                "MCL", "MGW", "MORTY", "NAV", "OOT", "PANGEA", "PAX", "QTUM", "REVS", "RFOX", "RICK", "RVN",
-                "SUPERNET", "TUSD", "USDC", "VRSC", "XZC", "ZEC", "ZER"]
-
-# 45 tickers atm = 1980 pairs
-possible_pairs = list(itertools.permutations(adex_tickers, 2))
+# adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL", "CHIPS", "CRYPTO", "DAI", "DASH",
+#                 "DEX", "DGB", "DOGE", "ECA", "EMC2", "ETH", "FTC", "HUSH", "ILN", "JUMBLR", "KMD", "LABS", "LTC",
+#                 "MCL", "MGW", "MORTY", "NAV", "OOT", "PANGEA", "PAX", "QTUM", "REVS", "RFOX", "RICK", "RVN",
+#                 "SUPERNET", "TUSD", "USDC", "VRSC", "XZC", "ZEC", "ZER"]
+#
+# 45 tickers atm = 1980 pairs // 283 in db as of 09.27
+# possible_pairs = list(itertools.permutations(adex_tickers, 2))
+possible_pairs = get_pairs()  # ~25s execution vs ~207s for above
 db_connection = MongoAPI()
 
 
@@ -43,16 +45,18 @@ def fetch_summary_data():
             last_swap_price = 0
             lowest_ask = 0
             highest_bid = 0
-            timestamp_24h_ago = int((datetime.date.today() - datetime.timedelta(1)).strftime("%s"))
+            timestamp_24h_ago = int((datetime.date.today() - datetime.timedelta(1)).strftime("%S"))
             pair_orderbook = json.loads(adex_calls.get_orderbook("http://127.0.0.1:7783", "testuser", pair[0], pair[1]).text)
             pair_swaps_last_24h = []
 
             try:
-                lowest_ask  = min([float(x['price']) for x in pair_orderbook["asks"]])
+                lowest_ask = min([float(x['price']) for x in pair_orderbook["asks"]])
+            except ValueError:
+                lowest_ask = float("{:.2f}".format(0.0))
+            try:
                 highest_bid = max([float(x['price']) for x in pair_orderbook["bids"]])
-            # TODO: proper handling of empty bid/asks
-            except Exception:
-                 pass
+            except ValueError:
+                highest_bid = float("{:.2f}".format(0.0))
 
             for swap in pair_swaps:
                 # TODO: make a get_price funciton or maybe it worth to add on DB population stage
@@ -61,11 +65,12 @@ def fetch_summary_data():
                 swap_timestamp = swap["events"][0]["timestamp"] // 1000
                 # TODO: have to get only succesful swaps or last price might be counted for failed too!
                 if first_event["type"] == "Started":
-                    swap_price = float(first_event["data"]["taker_amount"]) / float(first_event["data"]["maker_amount"])
+                    swap_price = (float(first_event["data"]["taker_amount"])
+                                  / float(first_event["data"]["maker_amount"]))
                     # 24h volume and price calculating price
                     if swap_timestamp > timestamp_24h_ago:
                         pair_swaps_last_24h.append(swap)
-                        base_volume_24h  += float(first_event["data"]["maker_amount"])
+                        base_volume_24h += float(first_event["data"]["maker_amount"])
                         quote_volume_24h += float(first_event["data"]["taker_amount"])
                         if swap_price > highest_price_24h:
                             highest_price_24h = swap_price
@@ -75,38 +80,49 @@ def fetch_summary_data():
                             lowest_price_24h = swap_price
                         # last trade 24h determining part
                         if swap_timestamp > last_timestamp_24h:
-                            last_price = format(swap_price, '.10f')
+                            last_price = float(swap_price)
                             last_timestamp_24h = swap_timestamp
-                            last_swap_price = format(swap_price, '.10f')
+                            last_swap_price = float(swap_price)
                         # first trade 24h determining part
                         if swap_timestamp == 0:
                             first_timestamp_24h = swap_timestamp
-                            first_swap_price = format(swap_price, '.10f')
-                        elif swap_timestamp <  first_timestamp_24h:
+                            first_swap_price = float(swap_price)
+                        elif swap_timestamp < first_timestamp_24h:
                             first_timestamp_24h = swap_timestamp
-                            first_swap_price = format(swap_price, '.10f')
+                            first_swap_price = float(swap_price)
                     # last trade overall determining part - there might be no swaps in 24h, thats why its here
                     if swap_timestamp > last_timestamp:
-                        last_price =  format(swap_price, '.10f')
+                        last_price = float(swap_price)
                         last_timestamp = swap_timestamp
-                price_change_percent_24h = format((float(last_swap_price) - float(first_swap_price)) / 100, '.10f')
+                price_change_percent_24h = (float(last_swap_price) - float(first_swap_price)) / float(100)
 
-            pair_data = {"trading_pair": pair[0] + "_" + pair[1], "base_currency": pair[0],
-                         "quote_currency": pair[1], "last_price": last_price,
-                         "last_trade_time": last_timestamp, "base_volume_24h": base_volume_24h,
-                         "quote_volume_24h": quote_volume_24h, "highest_price_24h": format(float(highest_price_24h), '.10f'),
-                         "lowest_price_24h": format(float(lowest_price_24h), '.10f'), "price_change_percent_24h": price_change_percent_24h,
-                         "lowest_ask": format(lowest_ask, '.10f'), "highest_bid": format(highest_bid, '.10f')}
+            pair_data = {"trading_pair": pair[0] + "_" + pair[1],
+                         "base_currency": pair[0],
+                         "quote_currency": pair[1],
+                         "last_price": enforce(last_price),
+                         "last_trade_time": last_timestamp,
+                         "base_volume_24h": enforce(base_volume_24h),
+                         "quote_volume_24h": enforce(quote_volume_24h),
+                         "highest_price_24h": enforce(highest_price_24h),
+                         "lowest_price_24h": enforce(lowest_price_24h),
+                         "price_change_percent_24h": enforce(price_change_percent_24h),
+                         "lowest_ask": enforce(lowest_ask),
+                         "highest_bid": enforce(highest_bid)}
             summary_endpoint_data.append(pair_data)
 
-            ticker_data_pair = {pair[0] + "_" + pair[1]: {"last_price": last_swap_price, "base_volume": base_volume_24h,
-                                                     "quote_volume": quote_volume_24h}}
+            ticker_data_pair = {pair[0] + "_" + pair[1]: {
+                "last_price": enforce(last_swap_price),
+                "base_volume": enforce(base_volume_24h),
+                "quote_volume": enforce(quote_volume_24h)
+            }}
             ticker_endpoint_data.append(ticker_data_pair)
 
-            orderbook_data_pair = {pair[0] + "_" + pair[1]: {"timestamp": int(round(time.time() * 1000)),
-                                                             # TODO: sort orders
-                                                             "bids": [],
-                                                             "asks": []}}
+            orderbook_data_pair = {pair[0] + "_" + pair[1]: {
+                "timestamp": int(round(time.time() * 1000)),
+                # TODO: sort orders
+                "bids": [],
+                "asks": []
+            }}
             for bid in pair_orderbook["bids"]:
                 orderbook_data_pair[pair[0] + "_" + pair[1]]["bids"].append([bid["price"], bid["maxvolume"]])
 
@@ -121,11 +137,12 @@ def fetch_summary_data():
                 first_event = swap["events"][0]["event"]
                 trades_data_pair[pair[0] + "_" + pair[1]].append({
                     "trade_id": swap["uuid"],
-                    "price": format(float(first_event["data"]["taker_amount"]) 
-                                    / float(first_event["data"]["maker_amount"]),'.10f'),
-                    "base_volume": float(first_event["data"]["maker_amount"]),
-                    "quote_volume": float(first_event["data"]["taker_amount"]),
-                    "timestamp": swap["events"][0]["timestamp"] // 1000,
+                    "price": enforce(
+                              float(first_event["data"]["taker_amount"])
+                              / float(first_event["data"]["maker_amount"])),
+                    "base_volume": enforce(float(first_event["data"]["maker_amount"])),
+                    "quote_volume": enforce(float(first_event["data"]["taker_amount"])),
+                    "timestamp": int(swap["events"][0]["timestamp"] // 1000),
                     #TODO: a bit confused here, probably directions like a DEX/KMD KMD/DEX needs to be combined to determine buys/sells
                     "type": "buy"
                 })
