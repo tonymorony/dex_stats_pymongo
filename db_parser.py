@@ -42,8 +42,6 @@ class ArgumentInputParserError(Parser_Error):
         self.message = message
 
 
-db = client['swaps']
-
 class DB_Parser():
     def __init__(self,                parse_uuid=True,
                  async_mode=False,    parse_pairs=True,
