@@ -42,6 +42,7 @@ class ArgumentInputParserError(Parser_Error):
         self.message = message
 
 
+db = client['swaps']
 
 class DB_Parser():
     def __init__(self,                parse_uuid=True,
@@ -89,10 +90,10 @@ class DB_Parser():
         #creating main successful/failed collections
         if self.save_failed:
             self.failed = self.swaps.failed_swaps_collection
-        
+
         if self.save_successful:
             self.successful = self.swaps.successsful_swaps_collection
-        
+
         #enabling collection of top swap pairs
         if self.parse_pairs:
             self.pairs = self.swaps.top_pairs_collection
@@ -116,7 +117,7 @@ class DB_Parser():
     def __str__(self):
         config = ('parser-conf:'
                  '\n  async={}'
-                 '\n  data_analysis={}').format(self.async_mode, 
+                 '\n  data_analysis={}').format(self.async_mode,
                                                 self.data_analysis)
         return config
 
@@ -141,7 +142,7 @@ class DB_Parser():
     def create_taker_files_pool(self):
         self.taker_files_pool = [ x
                                   for x
-                                  in os.listdir(self.taker_folder_path) 
+                                  in os.listdir(self.taker_folder_path)
                                   if x.endswith('.json') ]
 
 
@@ -150,9 +151,9 @@ class DB_Parser():
     #      swaps that happen/created in the last 24h
     @measure
     def update_maker_files_pool(self):
-        self.maker_files_pool = [ "{}".format(x) 
-                                  for x 
-                                  in os.listdir(self.swaps_folder_path) 
+        self.maker_files_pool = [ x
+                                  for x
+                                  in os.listdir(self.maker_folder_path)
                                   if x.endswith('.json') ]
 
 
@@ -163,12 +164,15 @@ class DB_Parser():
                                   in os.listdir(self.swaps_folder_path)
                                   if x.endswith('.json') ]
     
-    
+
     def check_connection_to_mongo(self):
         return self.swaps
 
 
+
     ### SWAP FILES PARSING FUNCTIONS
+
+    
     def parse_swap_data(self, path_to_swap_json : str):
         """Parses json from filepath and (returns : dict)"""
         with open(path_to_swap_json) as f:
@@ -237,7 +241,7 @@ class DB_Parser():
             return swap['type']
         except KeyError:
             return 'Taker'
-    
+
 
     # PYMONGO INPUT FUNCTIONS
     #@measure
@@ -285,7 +289,8 @@ class DB_Parser():
 
         is_swap_successful = self.is_swap_successful(swap_events)
         logging.debug('Checking if swap was successful ----> {}'.format(is_swap_successful))
-
+        
+        #commented out for now since takes to much time
         #self.insert_into_traiding_pair_collection(raw_swap_data)
         #self.insert_into_uuid_collection(raw_swap_data)
 
@@ -318,6 +323,7 @@ class DB_Parser():
         #for swap_file in taker_files_pool:
         #    self.insert_into_swap_collection(self.taker_folder_path + swap_file)
 
+        
         """
         if self.is_fresh_run:
             resp = self.successful.create_index([ ("uuid", 1) ])
@@ -325,8 +331,6 @@ class DB_Parser():
             resp = self.failed.create_index([ ("uuid", 1) ])
             logging.debug('creating index for failed collection --> {}'.format(resp))
         """
-
-
 
 
 """
