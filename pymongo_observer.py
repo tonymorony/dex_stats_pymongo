@@ -23,12 +23,11 @@ class SwapsObserver(Observer):
         else:
             pre_snap = EmptyDirectorySnapshot()
 
-        for watcher, handler in self._handlers.items():
-            self.path = watcher.path
+        for watcher, handler in self._handlers.items():  # dict { watcher: handler }
+            self.path = watcher.path  # we have single watcher: handler item, thus it works
             curr_snap = DirectorySnapshot(path)
             diff = DirectorySnapshotDiff(pre_snap, curr_snap)
             for h in handler:
-                # Dispatch files modifications
                 for new_path in diff.files_created:
                     if self.mask in new_path:
                         h.dispatch(FileCreatedEvent(new_path))
