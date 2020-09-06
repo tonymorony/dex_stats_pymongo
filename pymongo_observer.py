@@ -1,76 +1,78 @@
 import time
-import os
 import pickle
+import os
 from watchdog.observers import Observer
+from watchdog.utils.dirsnapshot import DirectorySnapshot, DirectorySnapshotDiff, EmptyDirectorySnapshot
+from watchdog.events import FileCreatedEvent, FileModifiedEvent
 from watchdog.events import PatternMatchingEventHandler
-from watchdog.utils import dirsnapshot
 from db_parser import DB_Parser as dbpar
 
-path = r"..\SWAPS\STATS\MAKER\\"
-Parser = dbpar(swaps_folder_path=path)
+
+class SwapsObserver(Observer):
+    def __init__(self, snap_path="../SWAPS/STATS/MAKER/",
+                 mask=".json", *args, **kwargs):
+        self.snap_path = snap_path
+        self.mask = mask
+        self.path = ""
+        Observer.__init__(self, *args, **kwargs)
+
+    def start(self):
+        if os.path.exists(self.snap_path):
+            with open(self.snap_path, 'rb') as f:
+                pre_snap = pickle.load(f)
+        else:
+            pre_snap = EmptyDirectorySnapshot()
+
+        for watcher, handler in self._handlers.items():
+            self.path = watcher.path
+            curr_snap = DirectorySnapshot(path)
+            diff = DirectorySnapshotDiff(pre_snap, curr_snap)
+            for h in handler:
+                # Dispatch files modifications
+                for new_path in diff.files_created:
+                    if self.mask in new_path:
+                        h.dispatch(FileCreatedEvent(new_path))
+                for mod_path in diff.files_modified:
+                    if self.mask in mod_path:
+                        h.dispatch(FileModifiedEvent(mod_path))
+        Observer.start(self)
+
+    def stop(self):
+        snapshot = DirectorySnapshot(self.path)
+        with open(self.snap_path, 'wb') as fb:
+            pickle.dump(snapshot, fb, -1)
+        Observer.stop(self)
 
 
 def on_created(event):
-    Parser.insert_into_swap_collection(event.src_path)
+    if ".json" in event.src_path:
+        Parser.insert_into_swap_collection(event.src_path)
     print(event.src_path)
 
 
 def on_modified(event):
-    Parser.insert_into_swap_collection(event.src_path)
+    if ".json" in event.src_path:
+        Parser.insert_into_swap_collection(event.src_path)
     print(event.src_path)
 
 
-def make_snapshot(dpath):
-    with open('snap_latest', 'wb') as sf:
-        snap_latest = dirsnapshot.DirectorySnapshot(dpath, recursive=True)
-        print(repr(snap_latest))
-        pickle.dump(snap_latest, sf, -1)
-
-
-def check_snapshot(dpath, old_snap_exists=True):
-    print("checking snapshot step1")
-    snap_current = dirsnapshot.DirectorySnapshot(dpath, recursive=True)
-    snap_prev = {}
-    if old_snap_exists:
-        with open('snap_latest', 'rb') as sg:
-            snap_prev = pickle.load(sg)
-    else:
-        snap_prev = dirsnapshot.EmptyDirectorySnapshot()
-    print("checking snapshot step2")
-    check = dirsnapshot.DirectorySnapshotDiff(snap_prev, snap_current)
-
-    for mods in check.files_modified:
-        Parser.insert_into_swap_collection(mods)
-        print(mods)
-    for new in check.files_created:
-        Parser.insert_into_swap_collection(new)
-        print(new)
-
-
 if __name__ == "__main__":
-    print("Started")
-    patterns = "*.json"
-    ignore_patterns = ""
-    ignore_directories = False
-    case_sensitive = True
-    my_event_handler = PatternMatchingEventHandler(patterns, ignore_patterns, ignore_directories, case_sensitive)
-    my_event_handler.on_created = on_created
-    my_event_handler.on_modified = on_modified
-    go_recursively = True
-    my_observer = Observer()
-    my_observer.schedule(my_event_handler, path, recursive=go_recursively)
+    path = "../SWAPS/STATS/MAKER/"
+    snap_p = path + "backup.pickle"
+    Parser = dbpar(swaps_folder_path=path)
+    pattern = "*.json"
+    event_handler = PatternMatchingEventHandler(patterns=pattern, ignore_directories=True, case_sensitive=True)
+    event_handler.on_created = on_created
+    event_handler.on_modified = on_modified
+    observer = SwapsObserver(snap_path=snap_p, mask=".json")
+    observer.schedule(event_handler, path, recursive=True)
     snapshot_found = False
-    print("checking snapshot step0")
-    if os.path.isfile('snap_latest'):
-        snapshot_found = True
-    my_observer.start()
+    print("Starting observer")
+    observer.start()
     print("Observer started")
-    check_snapshot(path, snapshot_found)
-    print("checking snapshot step4 - end")
     try:
         while True:
-            time.sleep(1)
+            pass
     except KeyboardInterrupt:
-        my_observer.stop()
-    my_observer.join()
-    make_snapshot(path)
+        observer.stop()
+    observer.join()

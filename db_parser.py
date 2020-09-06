@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from gevent import monkey
-_ = monkey.patch_all()
+# from gevent import monkey
+# _ = monkey.patch_all()
 
 
 from utils.swap_events import (maker_swap_success_events,
