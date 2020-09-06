@@ -20,6 +20,7 @@ import os
 
 
 
+
 def measure(func):
     @wraps(func)
     def _time_it(*args, **kwargs):
@@ -42,16 +43,14 @@ class ArgumentInputParserError(Parser_Error):
         self.message = message
 
 
-db = client['swaps']
-
 class DB_Parser():
-    def __init__(self,                parse_uuid=True,
+    def __init__(self,                parsed_files=True,
                  async_mode=False,    parse_pairs=True,
                  parse_maker=True,    parse_taker=True,
                  save_failed=True,    save_successful=True,
                  data_analysis=False, use_swap_events=True,
                  mongo_port=27017,    mongo_ip='localhost',
-                 swaps_folder_path="../SWAPS/STATS/"):
+                 swaps_folder_path="../SWAPS/STATS/MAKER/"):
         #maker_folder_path = "DB/<pubkey>/SWAPS/STATS/MAKER/"
         #taker_folder_path = "DB/<pubkey>/SWAPS/STATS/TAKER/"
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -74,18 +73,19 @@ class DB_Parser():
         self.async_mode  = async_mode
         self.save_failed = save_failed
         self.parse_pairs = parse_pairs
+        self.parsed_files = parsed_files
         self.data_analysis   = data_analysis
         self.use_swap_events = use_swap_events
         self.save_successful = save_successful
-        self.swaps_folder_path = swaps_folder_path
-        self.maker_folder_path = swaps_folder_path + 'MAKER/'
-        self.taker_folder_path = swaps_folder_path + 'TAKER/'
+        self.maker_folder_path = swaps_folder_path
+        self.taker_folder_path = swaps_folder_path[:-6] + 'TAKER/'
 
         #init mongo client connection and create swaps db
         self.client = MongoClient('mongodb://{}:{}/'.format(mongo_ip, mongo_port))
-        self.swaps = self.client.swaps0_with_generator_pool
+        self.swaps = self.client.swaps
 
         self.is_fresh_run = not bool(self.swaps.list_collection_names())
+        self.parsed_files_list = []
 
         #creating main successful/failed collections
         if self.save_failed:
@@ -94,17 +94,22 @@ class DB_Parser():
         if self.save_successful:
             self.successful = self.swaps.successsful_swaps_collection
 
+        if self.parsed_files:
+            self.parsed = self.swaps.parsed_files
+
+
+        '''
         #enabling collection of top swap pairs
         if self.parse_pairs:
             self.pairs = self.swaps.top_pairs_collection
 
         #enabling collection of uuids with timestamp
-        if self.parse_uuid:
-            self.uuids = self.swaps.uuids_with_timestamp_collection
+        
 
         #enabling extensive collection of swap info for data analysis
         if self.data_analysis:
             self.data = self.swaps.data_analysis_collection
+        '''
 
         #enabling swap events for validation of successful/failed swaps
         if self.use_swap_events:
@@ -124,11 +129,11 @@ class DB_Parser():
     
     #Generator test
     #@measure
-    def create_files_pool_with_abs_path(self):
-        for dirpath,_,filenames in os.walk(self.swaps_folder_path):
-            for f in filenames:
-                if f.endswith('.json'):
-                    yield os.path.abspath(os.path.join(dirpath, f))
+    def create_maker_files_pool_with_abs_path(self):
+        for dirpath,_,filenames in os.walk(self.maker_folder_path):
+            for filename in filenames:
+                if filename.endswith('.json'):
+                    yield os.path.abspath(os.path.join(dirpath, filename)), filename
 
 
     @measure
@@ -149,6 +154,7 @@ class DB_Parser():
     #TODO: parse uuids, if there are new uuids, update, else do nothing
     #      also could be good to save last timestamp or check only for
     #      swaps that happen/created in the last 24h
+    '''
     @measure
     def update_maker_files_pool(self):
         self.maker_files_pool = [ x
@@ -161,18 +167,17 @@ class DB_Parser():
     def update_taker_files_pool(self):
         self.taker_files_pool = [ x
                                   for x
-                                  in os.listdir(self.swaps_folder_path)
+                                  in os.listdir(self.maker_folder_path)
                                   if x.endswith('.json') ]
     
 
     def check_connection_to_mongo(self):
         return self.swaps
-
+    '''
 
 
     ### SWAP FILES PARSING FUNCTIONS
 
-    
     def parse_swap_data(self, path_to_swap_json : str):
         """Parses json from filepath and (returns : dict)"""
         with open(path_to_swap_json) as f:
@@ -195,6 +200,15 @@ class DB_Parser():
                         swap_events == self.taker_swap_success_events) else False
 
 
+    def is_duplicate(self, swap_file : str):
+        return True if swap_file in self.parsed_files else False
+
+
+    def is_maker(self, swap_file_abspath : str):
+        return True if 'MAKER' in swap_file_abspath else False
+
+
+    '''
     def parse_traiding_pair(self, swap : dict):
         try:
             return {
@@ -241,9 +255,10 @@ class DB_Parser():
             return swap['type']
         except KeyError:
             return 'Taker'
-
+    '''
 
     # PYMONGO INPUT FUNCTIONS
+    '''
     #@measure
     def insert_into_traiding_pair_collection(self, swap : dict):
         logging.debug('parsing of traiding pair: STARTED')
@@ -279,58 +294,66 @@ class DB_Parser():
         if not result:
             logging.debug('something wrong with insertion --> {}'.format(data))
         #return data #not sure if we need this yet...
-
+    '''
+    @measure
+    def insert_into_parsed_files_collection(self):
+        self.parsed.insert({'data' : self.parsed_files_list})
+    
 
     @measure
     def insert_into_swap_collection(self, swap_file : str):
-        logging.debug('\n\nInsertion into collection:\n  reading swap file {}'.format(swap_file))
+        logging.debug('\n\nInsertion into collection:'
+                      '\n  reading swap file {}'.format(swap_file))
         raw_swap_data = self.parse_swap_data(swap_file)
         swap_events = self.parse_swap_events(raw_swap_data)
 
-        is_swap_successful = self.is_swap_successful(swap_events)
-        logging.debug('Checking if swap was successful ----> {}'.format(is_swap_successful))
+        swap_successful = self.is_swap_successful(swap_events)
+        logging.debug('Checking if swap was successful ----> {}'.format(swap_successful))
         
-        #commented out for now since takes to much time
+        #commented out for now since takes too much time
         #self.insert_into_traiding_pair_collection(raw_swap_data)
         #self.insert_into_uuid_collection(raw_swap_data)
 
-        if self.is_fresh_run and is_swap_successful:
+        if swap_successful:
             self.successful.insert(raw_swap_data)
-        elif self.is_fresh_run and not is_swap_successful:
+        else:
             self.failed.insert(raw_swap_data)
+
+
+        logging.debug('Insertion into collection: DONE')
+
+        '''
         elif not self.is_fresh_run and is_swap_successful:
             self.successful.update({"uuid": raw_swap_data["uuid"]}, raw_swap_data, upsert=True)
         else:
             self.failed.update({"uuid": raw_swap_data["uuid"]}, raw_swap_data, upsert=True)
-        logging.debug('Insertion into collection: DONE')
-
+        
+        '''
 
     @measure
-    def loop_through_all_swap_files(self):
+    def create_mongo_collections(self):
         '''
         self.create_maker_files_pool()
-        self.create_taker_files_pool()
-        
         maker_files_pool = self.maker_files_pool
+        self.create_taker_files_pool()
         taker_files_pool = self.taker_files_pool
+        matched_maker_swaps = []
+
+        for maker_file in maker_files_pool:
+            if maker_file in taker_files_pool:
+                matched_maker_swaps.append(maker_files_pool.pop())
         '''
-        swap_files_pool = self.create_files_pool_with_abs_path()
-        for swap_file in swap_files_pool:
-            self.insert_into_swap_collection(swap_file)
         
-        #self.is_fresh_run = False
+        swap_files_pool = self.create_maker_files_pool_with_abs_path()
 
-        #for swap_file in taker_files_pool:
-        #    self.insert_into_swap_collection(self.taker_folder_path + swap_file)
-
+        for swap_file_abspath, swap_file_name in swap_files_pool:
+            self.parsed_files_list.append(swap_file_name)
+            self.insert_into_swap_collection(swap_file_abspath)
         
-        """
-        if self.is_fresh_run:
-            resp = self.successful.create_index([ ("uuid", 1) ])
-            logging.debug('creating index for successful collection --> {}'.format(resp))
-            resp = self.failed.create_index([ ("uuid", 1) ])
-            logging.debug('creating index for failed collection --> {}'.format(resp))
-        """
+        self.insert_into_parsed_files_collection()
+
+        resp = self.successful.create_index([ ("uuid", 1) ])
+        logging.debug('creating index for successful collection --> {}'.format(resp))
 
 
 """
