@@ -46,13 +46,11 @@ class SwapsObserver(Observer):
 def on_created(event):
     if ".json" in event.src_path:
         Parser.insert_into_swap_collection(event.src_path)
-    print(event.src_path)
 
 
 def on_modified(event):
     if ".json" in event.src_path:
         Parser.insert_into_swap_collection(event.src_path)
-    print(event.src_path)
 
 
 if __name__ == "__main__":
