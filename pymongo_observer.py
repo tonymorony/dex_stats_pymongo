@@ -4,15 +4,19 @@ import pickle
 from watchdog.observers import Observer
 from watchdog.events import PatternMatchingEventHandler
 from watchdog.utils import dirsnapshot
+from db_parser import DB_Parser as dbpar
+
+path = r"..\SWAPS\STATS\MAKER\\"
+Parser = dbpar(swaps_folder_path=path)
 
 
 def on_created(event):
-    # pass to db_parser
+    Parser.insert_into_swap_collection(event.src_path)
     print(event.src_path)
 
 
 def on_modified(event):
-    # pass to db_parser
+    Parser.insert_into_swap_collection(event.src_path)
     print(event.src_path)
 
 
@@ -24,6 +28,7 @@ def make_snapshot(dpath):
 
 
 def check_snapshot(dpath, old_snap_exists=True):
+    print("checking snapshot step1")
     snap_current = dirsnapshot.DirectorySnapshot(dpath, recursive=True)
     snap_prev = {}
     if old_snap_exists:
@@ -31,15 +36,19 @@ def check_snapshot(dpath, old_snap_exists=True):
             snap_prev = pickle.load(sg)
     else:
         snap_prev = dirsnapshot.EmptyDirectorySnapshot()
+    print("checking snapshot step2")
     check = dirsnapshot.DirectorySnapshotDiff(snap_prev, snap_current)
 
     for mods in check.files_modified:
-        print(mods)     # pass to db_parser
+        Parser.insert_into_swap_collection(mods)
+        print(mods)
     for new in check.files_created:
-        print(new)      # pass to db_parser
+        Parser.insert_into_swap_collection(new)
+        print(new)
 
 
 if __name__ == "__main__":
+    print("Started")
     patterns = "*.json"
     ignore_patterns = ""
     ignore_directories = False
@@ -47,19 +56,21 @@ if __name__ == "__main__":
     my_event_handler = PatternMatchingEventHandler(patterns, ignore_patterns, ignore_directories, case_sensitive)
     my_event_handler.on_created = on_created
     my_event_handler.on_modified = on_modified
-    path = "../SWAPS/STATS/MAKER/"
     go_recursively = True
     my_observer = Observer()
     my_observer.schedule(my_event_handler, path, recursive=go_recursively)
-    my_observer.start()
     snapshot_found = False
+    print("checking snapshot step0")
     if os.path.isfile('snap_latest'):
         snapshot_found = True
+    my_observer.start()
+    print("Observer started")
     check_snapshot(path, snapshot_found)
+    print("checking snapshot step4 - end")
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         my_observer.stop()
-        my_observer.join()
+    my_observer.join()
     make_snapshot(path)

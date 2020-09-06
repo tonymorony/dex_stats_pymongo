@@ -298,10 +298,10 @@ class DB_Parser():
     @measure
     def insert_into_parsed_files_collection(self):
         self.parsed.insert({'data' : self.parsed_files_list})
-    
+
 
     @measure
-    def insert_into_swap_collection(self, swap_file : str):
+    def insert_into_swap_collection(self, swap_file : str) -> bool:
         logging.debug('\n\nInsertion into collection:'
                       '\n  reading swap file {}'.format(swap_file))
         raw_swap_data = self.parse_swap_data(swap_file)
@@ -315,13 +315,17 @@ class DB_Parser():
         #self.insert_into_uuid_collection(raw_swap_data)
 
         if swap_successful:
-            self.successful.insert(raw_swap_data)
+            if self.is_swap_finished(swap_events):
+                self.successful.insert(raw_swap_data)
+            else:
+                logging.debug('Insertion into collection: ABORTED - Ongoing swap')
+                return False
         else:
             self.failed.insert(raw_swap_data)
 
 
         logging.debug('Insertion into collection: DONE')
-
+        return True
         '''
         elif not self.is_fresh_run and is_swap_successful:
             self.successful.update({"uuid": raw_swap_data["uuid"]}, raw_swap_data, upsert=True)
