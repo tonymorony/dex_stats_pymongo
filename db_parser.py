@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from gevent import monkey
-_ = monkey.patch_all()
+# from gevent import monkey
+# _ = monkey.patch_all()
 
 
 from utils.swap_events import (maker_swap_success_events,
@@ -84,18 +84,23 @@ class DB_Parser():
         self.client = MongoClient('mongodb://{}:{}/'.format(mongo_ip, mongo_port))
         self.swaps = self.client.swaps
 
+        if self.parsed_files:
+            self.parsed = self.swaps.parsed_files
+
         self.is_fresh_run = not bool(self.swaps.list_collection_names())
-        self.parsed_files_list = []
+        if self.is_fresh_run:
+            self.parsed_files_list = []
+        else:
+            self.parsed_files_list = list(self.parsed.find({'data': {'$exists': 'true', '$ne': []}}))[0]['data']
+            print(type(self.parsed_files_list))
+            print(self.parsed_files_list)
 
         #creating main successful/failed collections
         if self.save_failed:
             self.failed = self.swaps.failed_swaps_collection
 
         if self.save_successful:
-            self.successful = self.swaps.successsful_swaps_collection
-
-        if self.parsed_files:
-            self.parsed = self.swaps.parsed_files
+            self.successful = self.swaps.successful_swaps_collection
 
 
         '''
@@ -297,11 +302,12 @@ class DB_Parser():
     '''
     @measure
     def insert_into_parsed_files_collection(self):
-        self.parsed.insert({'data' : self.parsed_files_list})
-    
+        self.parsed.update_one({'data': {'$exists': 'true', '$ne': []}},
+                               {'$addToSet': {'data': {'$each': self.parsed_files_list}}}, upsert=True)
+
 
     @measure
-    def insert_into_swap_collection(self, swap_file : str):
+    def insert_into_swap_collection(self, swap_file : str) -> bool:
         logging.debug('\n\nInsertion into collection:'
                       '\n  reading swap file {}'.format(swap_file))
         raw_swap_data = self.parse_swap_data(swap_file)
@@ -313,15 +319,23 @@ class DB_Parser():
         #commented out for now since takes too much time
         #self.insert_into_traiding_pair_collection(raw_swap_data)
         #self.insert_into_uuid_collection(raw_swap_data)
-
-        if swap_successful:
-            self.successful.insert(raw_swap_data)
-        else:
-            self.failed.insert(raw_swap_data)
-
-
-        logging.debug('Insertion into collection: DONE')
-
+        if not (raw_swap_data.get('uuid') in self.parsed_files_list):
+            if swap_successful:
+                if self.is_swap_finished(swap_events):
+                    self.successful.insert(raw_swap_data)
+                    self.parsed_files_list.append(raw_swap_data.get('uuid'))
+                    logging.debug('Insertion into collection: DONE')
+                    return True
+                else:
+                    logging.debug('Insertion into collection: ABORTED - Ongoing swap')
+                    return False
+            else:
+                self.failed.insert(raw_swap_data)
+                self.parsed_files_list.append(raw_swap_data.get('uuid'))
+                logging.debug('Insertion into collection: DONE')
+                return True
+        logging.debug('Insertion into collection: ABORTED -- Existing swap')
+        return False
         '''
         elif not self.is_fresh_run and is_swap_successful:
             self.successful.update({"uuid": raw_swap_data["uuid"]}, raw_swap_data, upsert=True)
