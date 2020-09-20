@@ -4,7 +4,6 @@ from pytest_utils.util import validate_template
 
 
 class TestAPI:
-
     def test_ticker_call(self, test_params):
         schema_ticker = {
             'type': 'array',
@@ -26,6 +25,7 @@ class TestAPI:
                test_params.get('port') + "/api/v1/ticker")
         res = requests.get(url, headers=header)
         assert validate_template(res.json(), schema_ticker)
+
 
     def test_summary_call(self, test_params):
         schema_summary = {
@@ -56,6 +56,7 @@ class TestAPI:
                test_params.get('port') + "/api/v1/summary")
         res = requests.get(url, headers=header)
         assert validate_template(res.json(), schema_summary)
+
 
     def test_orderbook_call(self, test_params):
         schema_orderbook = {
@@ -103,6 +104,7 @@ class TestAPI:
                test_params.get('port') + "/api/v1/orderbook/" + pair)
         res = requests.get(url, headers=header)
         assert validate_template(res.json(), schema_orderbook)
+
 
     def test_trades_call(self, test_params):
         schema_trades = {
