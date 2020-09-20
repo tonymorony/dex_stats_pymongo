@@ -1,22 +1,29 @@
+import os
 import time
 import pickle
-import os
-from watchdog.observers import Observer
-from watchdog.utils.dirsnapshot import DirectorySnapshot, DirectorySnapshotDiff, EmptyDirectorySnapshot
-from watchdog.events import FileCreatedEvent, FileModifiedEvent
+from Parser import Parser
+from watchdog.events import (FileCreatedEvent, 
+                             FileModifiedEvent)
+from watchdog.observers import Observer as Watchdog
 from watchdog.events import PatternMatchingEventHandler
-from db_parser import DB_Parser as dbpar
+from watchdog.utils.dirsnapshot import (DirectorySnapshot, 
+                                        DirectorySnapshotDiff,
+                                        EmptyDirectorySnapshot)
 
 
-class SwapsObserver(Observer):
-    def __init__(self, snap_path="../SWAPS/STATS/MAKER/",
-                 mask=".json", *args, **kwargs):
+
+class Observer(Watchdog):
+    def __init__(self,
+                 snap_path="../../dex_stats_pymongo-data/STATS/MAKER/",
+                 mask=".json",
+                 *args, **kwargs):
         self.snap_path = snap_path
         self.mask = mask
         self.path = ""
-        Observer.__init__(self, *args, **kwargs)
+        Watchdog.__init__(self, *args, **kwargs)
 
-    def start(self):
+
+    def start_watchdog(self):
         if os.path.exists(self.snap_path):
             with open(self.snap_path, 'rb') as f:
                 pre_snap = pickle.load(f)
@@ -34,43 +41,52 @@ class SwapsObserver(Observer):
                 for mod_path in diff.files_modified:
                     if self.mask in mod_path:
                         h.dispatch(FileModifiedEvent(mod_path))
-        Observer.start(self)
+        Watchdog.start(self)
 
-    def stop(self):
+
+    def stop_watchdog(self):
         snapshot = DirectorySnapshot(self.path)
         with open(self.snap_path, 'wb') as fb:
             pickle.dump(snapshot, fb, -1)
-        Observer.stop(self)
+        Watchdog.stop(self)
+
 
 
 def on_created(event):
     if ".json" in event.src_path:
-        Parser.insert_into_swap_collection(event.src_path)
+        parser.insert_into_swap_collection(event.src_path)
 
 
 def on_modified(event):
     if ".json" in event.src_path:
-        Parser.insert_into_swap_collection(event.src_path)
+        parser.insert_into_swap_collection(event.src_path)
 
 
 if __name__ == "__main__":
-    path = "../SWAPS/STATS/MAKER/"
-    snap_p = path + "backup.pickle"
-    Parser = dbpar(swaps_folder_path=path)
+    path = "../../dex_stats_pymongo-data/STATS/MAKER/"
+    folder_snapshot_path = path + "backup.pickle"
+    Parser = Parser(swaps_folder_path=path)
     pattern = "*.json"
-    event_handler = PatternMatchingEventHandler(patterns=pattern, ignore_directories=True, case_sensitive=True)
+
+    event_handler = PatternMatchingEventHandler(patterns=pattern,
+                                                ignore_directories=True, 
+                                                case_sensitive=True)
     event_handler.on_created = on_created
     event_handler.on_modified = on_modified
-    observer = SwapsObserver(snap_path=snap_p, mask=".json")
-    observer.schedule(event_handler, path, recursive=True)
+
+    observer = Observer(snap_path=folder_snapshot_path, 
+                        mask=".json")
+    observer.schedule(event_handler, 
+                      path, 
+                      recursive=True)
     snapshot_found = False
     print("Starting observer")
-    observer.start()
+    observer.start_watchdog()
     print("Observer started")
     try:
         while True:
-            pass
+            time.sleep(5)
     except KeyboardInterrupt:
-        observer.stop()
+        observer.stop_watchdog()
     observer.join()
     Parser.insert_into_parsed_files_collection()

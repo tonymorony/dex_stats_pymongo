@@ -3,27 +3,72 @@ import time
 import json
 from db_connector import MongoAPI
 from utils import adex_calls
-from utils.util_funct import find_unique_pairs as get_pairs
+from utils.util_funct import find_unique_pairs
 from utils.util_funct import enforce_float_type as enforce
 
 
-# adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL", "CHIPS", "CRYPTO", "DAI", "DASH",
-#                 "DEX", "DGB", "DOGE", "ECA", "EMC2", "ETH", "FTC", "HUSH", "ILN", "JUMBLR", "KMD", "LABS", "LTC",
-#                 "MCL", "MGW", "MORTY", "NAV", "OOT", "PANGEA", "PAX", "QTUM", "REVS", "RFOX", "RICK", "RVN",
-#                 "SUPERNET", "TUSD", "USDC", "VRSC", "XZC", "ZEC", "ZER"]
-#
-# 45 tickers atm = 1980 pairs // 283 in db as of 09.27
-# possible_pairs = list(itertools.permutations(adex_tickers, 2))
-possible_pairs = get_pairs()  # ~25s execution vs ~207s for above
-db_connection = MongoAPI()
+
+class Fetcher:
+    def __init__(self):
+        self.mongo = MongoAPI()
+
+        #endpoint data variables
+        self.summary_data = []
+        self.ticker_data = []
+        self.orderbook_data = []
+        self.trades_data = []
+
+        #utils
+        self.possible_pairs = find_unique_pairs()
 
 
+    def fetch_summary_data(self):
+        pass
+
+
+    def fetch_tickers_data(self):
+        pass
+
+
+    def fetch_orderbook_data(self):
+        pass
+
+
+    def fetch_trades_data(self):
+        pass
+
+
+    def save_orderbook_data_as_json(self):
+        with open('orderbook_data.json', 'w') as f:
+            json.dump(orderbook_data, f)
+
+
+    def save_ticker_endpoint_data_as_json(self):
+        with open('ticker.json', 'w') as f:
+            json.dump(ticker_endpoint_data, f)
+
+
+    def save_summary_endpoint_data_as_json(self):
+        with open('summary.json', 'w') as f:
+            json.dump(summary_endpoint_data, f)
+
+
+    def save_trades_data_as_json(self):
+        with open('trades.json', 'w') as f:
+            json.dump(trades_data, f)
+
+
+
+
+
+
+
+
+
+
+
+'''
 def fetch_summary_data():
-
-    summary_endpoint_data = []
-    ticker_endpoint_data = []
-    orderbook_data = []
-    trades_data = []
 
     for pair in possible_pairs:
 
@@ -51,11 +96,11 @@ def fetch_summary_data():
 
             try:
                 lowest_ask = min([float(x['price']) for x in pair_orderbook["asks"]])
-            except ValueError:
+            except (ValueError, KeyError):
                 lowest_ask = float("{:.2f}".format(0.0))
             try:
                 highest_bid = max([float(x['price']) for x in pair_orderbook["bids"]])
-            except ValueError:
+            except (ValueError, KeyError):
                 highest_bid = float("{:.2f}".format(0.0))
 
             for swap in pair_swaps:
@@ -149,17 +194,17 @@ def fetch_summary_data():
 
             trades_data.append(trades_data_pair)
 
-    with open('summary.json', 'w') as f:
-        json.dump(summary_endpoint_data, f)
 
-    with open('ticker.json', 'w') as f:
-        json.dump(ticker_endpoint_data, f)
 
-    with open('orderbook_data.json', 'w') as f:
-        json.dump(orderbook_data, f)
+# adex_tickers = ["AWC", "AXE", "BAT", "BCH", "BET", "BOTS", "BTC", "BUSD", "CCL", "CHIPS", "CRYPTO", "DAI", "DASH",
+#                 "DEX", "DGB", "DOGE", "ECA", "EMC2", "ETH", "FTC", "HUSH", "ILN", "JUMBLR", "KMD", "LABS", "LTC",
+#                 "MCL", "MGW", "MORTY", "NAV", "OOT", "PANGEA", "PAX", "QTUM", "REVS", "RFOX", "RICK", "RVN",
+#                 "SUPERNET", "TUSD", "USDC", "VRSC", "XZC", "ZEC", "ZER"]
+#
+# 45 tickers atm = 1980 pairs // 283 in db as of 09.27
+# possible_pairs = list(itertools.permutations(adex_tickers, 2))
 
-    with open('trades.json', 'w') as f:
-        json.dump(trades_data, f)
 
 
 fetch_summary_data()
+'''
