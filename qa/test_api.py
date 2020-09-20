@@ -1,6 +1,6 @@
 import pytest
 import requests
-from pytest_utils.util import validate_template
+from pytest_utils.utils import validate_template
 
 
 class TestAPI:

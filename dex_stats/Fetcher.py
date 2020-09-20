@@ -1,10 +1,11 @@
-import datetime
 import time
 import json
-from db_connector import MongoAPI
+import datetime
+
 from utils import adex_calls
-from utils.util_funct import find_unique_pairs
-from utils.util_funct import enforce_float_type as enforce
+from db_connector import MongoAPI
+from utils.utils import enforce_float
+from utils.utils import find_unique_pairs
 
 
 
@@ -36,6 +37,15 @@ class Fetcher:
 
     def fetch_trades_data(self):
         pass
+
+
+
+    pair_swaps = list(db_connection.find_swaps_for_market(pair[0], pair[1]))
+
+
+
+
+
 
 
     def save_orderbook_data_as_json(self):
@@ -72,7 +82,7 @@ def fetch_summary_data():
 
     for pair in possible_pairs:
 
-        pair_swaps = list(db_connection.find_swaps_for_market(pair[0], pair[1]))
+        
         total_swaps = len(pair_swaps)
         # fetching data for pairs with historical swaps only
         if total_swaps > 0:
