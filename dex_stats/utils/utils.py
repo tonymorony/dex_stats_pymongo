@@ -1,6 +1,7 @@
 from functools import wraps
 from time import time
 
+
 def measure(func):
     @wraps(func)
     def _time_it(*args, **kwargs):
@@ -13,5 +14,5 @@ def measure(func):
     return _time_it
 
 
-def enforce_float_type(num: [float, int, str]) -> float:
+def enforce_float(num: [float, int, str]) -> float:
     return float("{:.10f}".format(num))
