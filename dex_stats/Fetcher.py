@@ -31,7 +31,7 @@ class Fetcher:
     def validate_by_amount(self):
         print("trading_pairs collection length: {}".format(len(self.trading_pairs)))
         count_true = 0
-        total_count = len(self.trading_pairs)
+        total_count = len(self.trading_pairs) - 1
         for pair, count in self.trading_pairs.items():
             pair = pair.split("_")
             if pair[0] and pair[1]:
@@ -40,12 +40,13 @@ class Fetcher:
                 if len(pair_swaps) == count:
                     decision = True
                     count_true += 1
-                logging.debug( "\tin trading_pairs: {} --> {}\
-                        \nin successful collection: {}\
-                                    \n\t\tdecision: {}\n".format(pair, count,
-                                                                 len(pair_swaps),
-                                                                 decision))
-        logging.debug("out of {} pairs {} validated as true".format(count, count_true))
+                logging.debug( "\n\tin trading_pairs: {} --> {}\
+                          \nin successful collection: {}\
+                                      \n\t\tdecision: {}\n".format(pair, count,
+                                                                   len(pair_swaps),
+                                                                   decision))
+        logging.debug("out of {} pairs {} validated as true".format(total_count, 
+                                                                    count_true))
 
 
 
