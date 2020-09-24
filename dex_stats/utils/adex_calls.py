@@ -1,3 +1,4 @@
+import json
 import requests
 
 
@@ -14,4 +15,4 @@ def get_orderbook(node_ip, user_pass, base, rel):
               'rel': rel
              }
     r = requests.post(node_ip, json=params)
-    return r
+    return json.loads(r.text)

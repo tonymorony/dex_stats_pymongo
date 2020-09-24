@@ -22,8 +22,8 @@ class Parser():
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
         #parser config
-        self.async_mode        = async_mode
         self.adex_tickers      = tickers
+        self.async_mode        = async_mode
         self.data_analysis     = data_analysis
         self.use_swap_events   = use_swap_events
         self.maker_folder_path = swaps_folder_path
@@ -40,26 +40,26 @@ class Parser():
         #creating utility collections
         self.parsed = self.swaps.parsed_files
         self.pairs  = self.swaps.trading_pairs
-        self.validate_uuid = 0
+        self.validate_uuid  = 0
         self.validate_pairs = 0
         self.is_fresh_run = not bool(self.swaps.list_collection_names())
         if self.is_fresh_run:
             self.parsed_files = []
             self.unique_pairs = {}
         else:
-            self.parsed_files = list(self.parsed.find({'data': {
-                                                                '$exists': 'true',
-                                                                '$ne': []
-                                                               }
+            self.parsed_files = list(self.parsed.find({ 'data': {
+                                                                    '$exists': 'true',
+                                                                    '$ne': []
+                                                                }
                                                       },
-                                                      {'data': 1}) # projection
+                                                      { 'data': 1 }) # projection
                                     )
-            self.unique_pairs = dict(self.pairs.find({'data': {
-                                                               '$exists': 'true',
-                                                               '$ne': {}
-                                                              }
-                                                    },
-                                                    {'data': 1})
+            self.unique_pairs = dict(self.pairs.find({ 'data':  {
+                                                                    '$exists': 'true',
+                                                                    '$ne': {}
+                                                                }
+                                                     },
+                                                     { 'data': 1 })
                                     )
 
         #enabling swap events for validation of successful/failed swaps
@@ -127,14 +127,16 @@ class Parser():
 
     def parse_traiding_pair(self, swap : dict):
         try:
-            pair = "{}_{}".format(swap['maker_coin'], swap['taker_coin'])
+            pair = "{}_{}".format(swap['maker_coin'],
+                                  swap['taker_coin'])
         except KeyError:
             try:
                 start_event = swap['events'][0]['event']['data']
                 pair = "{}_{}".format(start_event['maker_coin'],
                                       start_event['taker_coin'])
             except KeyError:
-                # there are around 1000 of those, probably old mm json format
+                # there are around 1000 of those among all swaps, 
+                # probably old mm json format
                 pair = "{}_{}".format('None', 'None')
                 self.validate_pairs += 1
         return pair
@@ -163,19 +165,19 @@ class Parser():
     ### PYMONGO INPUT
     @measure
     def insert_into_parsed_files_collection(self):
-        self.parsed.update_one({'data': {
-                                         '$exists': 'true',
-                                         '$ne': []
-                                        }
+        self.parsed.update_one({ 'data':    {
+                                                '$exists': 'true',
+                                                '$ne': []
+                                            }
                                },
-                               {'$addToSet': {'data': {'$each': self.parsed_files}}}, 
+                               { '$addToSet': { 'data': { '$each': self.parsed_files }}},
                                upsert=True)
         logging.debug('Input to parser files collection: DONE')
 
 
     @measure
     def insert_into_unique_pairs_collection(self):
-        self.pairs.insert_one({'data' : self.unique_pairs})
+        self.pairs.insert_one({ 'data' : self.unique_pairs })
         logging.debug('Input to unique pairs collection: DONE')
 
 
@@ -188,6 +190,7 @@ class Parser():
         swap_events   = self.parse_swap_events(raw_swap_data)
         uuid          = self.parse_uuid(raw_swap_data)
 
+        # DATA VALIDATION
         #probably need to move this to validate_swap()
         #exit if:
         #   file with this uuid was previously parsed

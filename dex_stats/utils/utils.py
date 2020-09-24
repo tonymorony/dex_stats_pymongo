@@ -1,6 +1,7 @@
 from functools import wraps
+from decimal import Decimal
 from time import time
-
+import numpy as np
 
 def measure(func):
     @wraps(func)
@@ -14,5 +15,12 @@ def measure(func):
     return _time_it
 
 
-def enforce_float(num: [float, int, str]) -> float:
+def remove_exponent(d):
+    return d.quantize(Decimal(1)) if d == d.to_integral() else d.normalize()
+
+def enforce_float( num : [float, int, str] ) -> float:
     return float("{:.10f}".format(num))
+
+
+def numforce_float(num) -> float:
+    return enforce_float(np.format_float_positional(num, unique=True, trim='-', precision=10))

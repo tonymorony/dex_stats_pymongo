@@ -4,8 +4,8 @@ tickers =  [
     "CRYPTO",  "DAI",     "DASH",    "DEX",       "DGB",
     "DOGE",    "ECA",     "EMC2",    "ETH",       "FTC",
     "HUSH",    "ILN",     "JUMBLR",  "KMD",       "LABS",
-    "LTC",     "MCL",     "MGW",     "NAV",
+    "LTC",     "MCL",     "MGW",     "NAV",       "MORTY"
     "OOT",     "PANGEA",  "PAX",     "QTUM",      "REVS",
-    "RFOX",               "RVN",     "SUPERNET",  "TUSD",
+    "RFOX",    "RICK"     "RVN",     "SUPERNET",  "TUSD",
     "USDC",    "VRSC",    "XZC",     "ZEC",       "ZER"
 ]
