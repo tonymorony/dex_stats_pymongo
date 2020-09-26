@@ -109,16 +109,18 @@ class Fetcher:
                                 )
             uuid = first_event['uuid']
 
+            #TRADES CALL
             #TODO: figure out type buy/sell
             self.trades.append({
-                              "​trade_id​"​: uuid,
-                        ​         "price"​: swap_price,
-                        ​   "base_volume"​: base_volume,
-                          ​"quote_volume"​: quote_volume,
-                        ​     "timestamp"​: timestamp_right_now,
-                                  "type"​:"sell"
+                             "​trade_id​" ​: uuid,
+                        ​        "price"​ : swap_price,
+                        ​  "base_volume" ​: base_volume,
+                         ​"quote_volume"​ : quote_volume,
+                        ​    "timestamp"​ : timestamp_right_now,
+                                 "type"​ : "sell"
             })
 
+        #SUMMARY CALL
         #TODO: figure out exponents.
         self.summary.append({
                         "trading_pairs" : pair,
@@ -134,6 +136,7 @@ class Fetcher:
                      "lowest_price_24h" : enforce_float(lowest_price_24h)
         })
 
+        #TICKER CALL
         #TODO: figure out base/quote id --> https://docs.google.com/document/d/1a5JfNE8aXusvfZBnEokwzp1-vGNJ_SPo-jIXhfnnEYE/edit
         self.ticker[pair] = {
                             ​  "base_id" ​: "0",
@@ -144,9 +147,10 @@ class Fetcher:
                              "isFrozen"​ : "0"
         }
 
+        #ORDERBOOK CALL
         #TODO: figure out sorting by best asks/bids
         self.orderbook[pair] = {
-                            "timestamp"​: datetime.now(),
+                            "timestamp"​: datetime.now().strftime("%s"),
                                  "bids"​: bids,
                                  ​"asks"​: asks
         }
@@ -159,7 +163,6 @@ class Fetcher:
                                        mm2_username,
                                        base_currency,
                                        quote_currency )
-
         try:
             asks = [ ask
                      for ask
@@ -189,7 +192,6 @@ class Fetcher:
             highest_bid = 0.
 
         return asks, lowest_ask, bids, highest_bid
-
 
 
     def save_orderbook_data_as_json(self):
