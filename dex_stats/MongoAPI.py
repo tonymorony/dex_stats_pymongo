@@ -27,7 +27,7 @@ class MongoAPI:
 
     def find_swaps_for_market(self, maker_coin, taker_coin):
         query  = { "$and":[{ "events.0.event.data.maker_coin" : maker_coin },
-                           { "events.0.event.data.taker_coin" : taker_coin }] 
+                           { "events.0.event.data.taker_coin" : taker_coin }]
                  }
         result = self.swaps_collection.find(query)
         return list(result)

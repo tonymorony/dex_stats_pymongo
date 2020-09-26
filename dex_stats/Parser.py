@@ -113,7 +113,7 @@ class Parser():
         return True if 'MAKER' in swap_file_abspath else False
 
 
-    ### SWAP FILE PARSING
+    ### SWAP PARSING
     def parse_swap_data(self, path_to_swap_json : str) -> dict:
         """Parses json from filepath and (returns : dict)"""
         with open(path_to_swap_json, 'r') as f:

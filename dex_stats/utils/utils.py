@@ -3,6 +3,7 @@ from decimal import Decimal
 from time import time
 import numpy as np
 
+
 def measure(func):
     @wraps(func)
     def _time_it(*args, **kwargs):
@@ -17,6 +18,7 @@ def measure(func):
 
 def remove_exponent(d):
     return d.quantize(Decimal(1)) if d == d.to_integral() else d.normalize()
+
 
 def enforce_float( num : [float, int, str] ) -> float:
     return float("{:.10f}".format(num))

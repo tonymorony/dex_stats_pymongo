@@ -2,15 +2,14 @@ import sys
 import time
 import json
 import logging
-from decimal import *
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 from utils import adex_calls
+from utils import adex_tickers
 from MongoAPI import MongoAPI
 from utils.adex_calls import get_orderbook
 from utils.utils import enforce_float
 from utils.utils import measure
-from utils.utils import remove_exponent
 
 
 
@@ -22,70 +21,39 @@ class Fetcher:
 
         #endpoint data variables
         self.summary    = []
-        self.tickers    = []
-        self.orderbooks = []
+        self.ticker     = {}
+        self.orderbook  = []
         self.trades     = []
-
+        self.possible_pairs = list(itertools.permutations(adex_tickers, 2))
         self.pairs = self.mongo.get_trading_pairs()
-
-
-    # DATA VALIDATION
-    def validate_by_amount(self):
-        count_true  = 0
-        total_count = len(self.trading_pairs) - 1
-        for pair, amount_in_pairs_collection in self.trading_pairs.items():
-            base  = pair.split("_")[0]
-            quote = pair.split("_")[1]
-            swaps = self.mongo.find_swaps_for_market( base, quote )
-            swaps_amount_in_db = len(swaps)
-            decision           = False
-            if swaps_amount_in_db == amount_in_pairs_collection:
-                decision    = True
-                count_true += 1
-            logging.debug(   "\n\tIn trading_pairs: {} --> {}\
-                        \nIn successful collection: {}\
-                                    \n\t\tDecision: {}\n".format( pair, amount_in_pairs_collection,
-                                                                  swaps_amount_in_db,
-                                                                  decision ))
-        logging.debug("BY AMOUNT: out of {} pairs {} validated as true".format( total_count,
-                                                                                count_true ))
 
 
     @measure
     def pipeline(self):
-        #count = 0
         for pair in self.pairs:
-            self.fetch_summary_for_pair(pair)
-            #if count == 10:
-            #    break
-            #count += 1
+            self.fetch_data_for_existing_pair(pair)
 
         for c, summary in enumerate(self.summary):
-            print("{} --> {}".format(c, summary))
+            print("\n{} --> {}".format(c, summary))
 
 
-
+    #TODO: Add zero-calls for non-existent tickers
     @measure
-    def fetch_summary_for_pair(self, pair):
+    def fetch_data_for_existing_pair(self, pair):
         trading_pairs  = pair.split("_")
         base_currency  = trading_pairs[0]
         quote_currency = trading_pairs[1]
 
-        last_price   = Decimal()
-        lowest_ask   = Decimal()
-        highest_bid  = Decimal()
-        base_volume  = Decimal()
-        quote_volume = Decimal()
+        last_price   = 0.
+        lowest_ask   = 0.
+        highest_bid  = 0.
+        base_volume  = 0.
+        quote_volume = 0.
 
         swap_prices       = list()
-        price_change_24h  = Decimal()
-        highest_price_24h = Decimal()
-        lowest_price_24h  = Decimal()
-
-        timestamp_24h_ago = int((date.today() - timedelta(1000)).strftime("%s"))
-        swaps_last_24h    = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
-                                                                             quote_currency,
-                                                                             timestamp_24h_ago)
+        price_change_24h  = 0.
+        highest_price_24h = 0.
+        lowest_price_24h  = 0.
 
         mm2_localhost = "http://127.0.0.1:7783"
         mm2_username  = "testuser"
@@ -95,18 +63,38 @@ class Fetcher:
                                        quote_currency )
 
         try:
-            lowest_ask = min([ Decimal(ask['price'])
-                               for ask
-                               in orderbook["asks"] ])
+            asks = [ ask
+                     for ask
+                     in orderbook["asks"] ]
         except (KeyError, ValueError):
-            lowest_ask = Decimal()
+            asks = [ "0." , "0." ]
 
         try:
-            highest_bid = max([ Decimal(bid['price'])
+            lowest_ask = min([  float(ask['price'])
+                                for ask
+                                in orderbook["asks"] ])
+        except (KeyError, ValueError):
+            lowest_ask = 0.
+
+        try:
+            bids = [ float(bid)
+                     for bid
+                     in orderbook["bids"] ]
+        except (KeyError, ValueError):
+            bids = [ 0. , 0. ]
+
+        try:
+            highest_bid = max([ float(bid['price'])
                                 for bid
                                 in orderbook["bids"] ])
         except (KeyError, ValueError):
-            highest_bid = Decimal()
+            highest_bid = 0.
+
+        timestamp_right_now = datetime.now().strftime("%s") // 1000
+        timestamp_24h_ago = int((datetime.now() - timedelta(1000)).strftime("%s")) // 1000
+        swaps_last_24h    = self.mongo.find_swaps_for_market_since_timestamp( base_currency,
+                                                                              quote_currency,
+                                                                              timestamp_24h_ago )
 
         #to make sure swaps are in the ascending order
         #swaps_last_24h = sorted( swaps_last_24h,
@@ -116,61 +104,78 @@ class Fetcher:
             first_event = swap["events"][0]["event"]["data"]
 
             swap_price  = (
-                            Decimal(first_event["taker_amount"])
+                            enforce_float(first_event["taker_amount"])
                             /
-                            Decimal(first_event["maker_amount"])
+                            enforce_float(first_event["maker_amount"])
                           )
             swap_prices.append(swap_price)
 
-            base_volume  += Decimal( first_event["maker_amount"] )
-            quote_volume += Decimal( first_event["taker_amount"] )
-        
+            base_volume  += enforce_float(first_event["maker_amount"])
+            quote_volume += enforce_float(first_event["taker_amount"])
+
             try:
                 lowest_price_24h  = min(swap_prices)
             except ValueError:
-                lowest_price_24h  = Decimal()
+                lowest_price_24h  = 0.
             try:
                 highest_price_24h = max(swap_prices)
             except ValueError:
-                highest_price_24h = Decimal()
+                highest_price_24h = 0.
 
-            price_start_24h = swap_prices[0]  if swap_prices else Decimal()
-            last_price      = swap_prices[-1] if swap_prices else Decimal()
+            price_start_24h = swap_prices[0]  if swap_prices else 0.
+            last_price      = swap_prices[-1] if swap_prices else 0.
 
             price_change_24h = ( (
-                                    Decimal(last_price)
+                                    last_price
                                     -
-                                    Decimal(price_start_24h) )
+                                    price_start_24h 
+                                 )
                                     /
-                                    Decimal(100)
+                                    100.
                                 )
-        TEN_PLACES = Decimal(10) ** -10
+
+            #TODO: figure out type buy/sell
+            self.trades.append({
+                              "​trade_id​"​:3523643,
+                        ​         "price"​:"0.01",
+                        ​   "base_volume"​:"569000",
+                          ​"quote_volume"​:"0.01000000",
+                        ​     "timestamp"​:"1585177482652",
+                                  "type"​:"sell"
+            })
+
+        #TODO: figure out exponents.
         self.summary.append({
                         "trading_pairs" : pair,
                         "base_currency" : base_currency,
                        "quote_currency" : quote_currency,
-                           "last_price" : float(remove_exponent(last_price)),
-                           "lowest_ask" : float(remove_exponent(lowest_ask)),
-                          "highest_bid" : float(remove_exponent(highest_bid)),
-                          "base_volume" : float(remove_exponent(base_volume)),
-                         "quote_volume" : float(remove_exponent(quote_volume)),
-             "price_change_percent_24h" : float(remove_exponent(price_change_24h)),
-                    "highest_price_24h" : float(remove_exponent(highest_price_24h)),
-                     "lowest_price_24h" : float(remove_exponent(lowest_price_24h))
+                           "last_price" : enforce_float(last_price),
+                           "lowest_ask" : enforce_float(lowest_ask),
+                          "highest_bid" : enforce_float(highest_bid),
+                          "base_volume" : enforce_float(base_volume),
+                         "quote_volume" : enforce_float(quote_volume),
+             "price_change_percent_24h" : enforce_float(price_change_24h),
+                    "highest_price_24h" : enforce_float(highest_price_24h),
+                     "lowest_price_24h" : enforce_float(lowest_price_24h)
         })
 
+        #TODO: figure out base/quote id --> https://docs.google.com/document/d/1a5JfNE8aXusvfZBnEokwzp1-vGNJ_SPo-jIXhfnnEYE/edit
+        self.ticker[pair] = {
+                            ​  "base_id" ​: "0",
+                             "quote_id"​ : "0",
+                           ​"last_price" ​: last_price,
+                         "quote_volume"​ : quote_volume,
+                          "base_volume"​ : base_volume,
+                             "isFrozen"​ : "0"
+        }
 
+        #TODO: figure out sorting by best asks/bids
+        self.orderbook[pair] = {
+                            "timestamp"​:"1585177482652",
+                                 "bids"​: bids,
+                                 ​"asks"​: asks
+        }
 
-    def fetch_tickers_data(self):
-        pass
-
-
-    def fetch_orderbook_data(self):
-        pass
-
-
-    def fetch_trades_data(self):
-        pass
 
 
 
@@ -198,17 +203,31 @@ class Fetcher:
 
 
 
+    # DATA VALIDATION
+    def validate_by_amount(self):
+        count_true  = 0
+        total_count = len(self.trading_pairs) - 1
+        for pair, amount_in_pairs_collection in self.trading_pairs.items():
+            base  = pair.split("_")[0]
+            quote = pair.split("_")[1]
+            swaps = self.mongo.find_swaps_for_market( base, quote )
+            swaps_amount_in_db = len(swaps)
+            decision           = False
+            if swaps_amount_in_db == amount_in_pairs_collection:
+                decision    = True
+                count_true += 1
+            logging.debug(   "\n\tIn trading_pairs: {} --> {}\
+                        \nIn successful collection: {}\
+                                    \n\t\tDecision: {}\n".format( pair, amount_in_pairs_collection,
+                                                                  swaps_amount_in_db,
+                                                                  decision ))
+        logging.debug("BY AMOUNT: out of {} pairs {} validated as true".format( total_count,
+                                                                                count_true ))
 
 
 if __name__ == "__main__":
-    logging.debug(getcontext())
-    getcontext().prec =  10
-    getcontext().Emax =  999999999999999999
-    getcontext().Emin = -999999999999999999
-    logging.debug(getcontext())
     f = Fetcher()
     f.pipeline()
-    logging.debug(getcontext())
 
 
 
@@ -355,7 +374,7 @@ def fetch_summary_data():
 #                 "SUPERNET", "TUSD", "USDC", "VRSC", "XZC", "ZEC", "ZER"]
 #
 # 45 tickers atm = 1980 pairs // 283 in db as of 09.27
-# possible_pairs = list(itertools.permutations(adex_tickers, 2))
+
 
 
 
