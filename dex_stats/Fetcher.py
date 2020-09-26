@@ -56,7 +56,7 @@ class Fetcher:
         highest_price_24h = 0.
         lowest_price_24h  = 0.
 
-        asks, lowest_ask, bids, highest_bid = self.fetch_orderbook()
+        asks, lowest_ask, bids, highest_bid = self.fetch_orderbook(base_currency, quote_currency)
 
         timestamp_right_now = datetime.now().strftime("%s") // 1000
         timestamp_24h_ago = int((datetime.now() - timedelta(1000)).strftime("%s")) // 1000
@@ -156,6 +156,8 @@ class Fetcher:
         }
 
 
+
+
     def fetch_orderbook(base_currency, quote_currency):
         mm2_localhost = "http://127.0.0.1:7783"
         mm2_username  = "testuser"
@@ -192,6 +194,11 @@ class Fetcher:
             highest_bid = 0.
 
         return asks, lowest_ask, bids, highest_bid
+
+
+
+
+
 
 
     def save_orderbook_data_as_json(self):
