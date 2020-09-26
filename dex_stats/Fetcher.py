@@ -24,6 +24,7 @@ class Fetcher:
         self.ticker     = {}
         self.orderbook  = []
         self.trades     = []
+
         self.possible_pairs = list(itertools.permutations(adex_tickers, 2))
         self.pairs = self.mongo.get_trading_pairs()
 
@@ -55,40 +56,7 @@ class Fetcher:
         highest_price_24h = 0.
         lowest_price_24h  = 0.
 
-        mm2_localhost = "http://127.0.0.1:7783"
-        mm2_username  = "testuser"
-        orderbook     = get_orderbook( mm2_localhost,
-                                       mm2_username,
-                                       base_currency,
-                                       quote_currency )
-
-        try:
-            asks = [ ask
-                     for ask
-                     in orderbook["asks"] ]
-        except (KeyError, ValueError):
-            asks = [ "0." , "0." ]
-
-        try:
-            lowest_ask = min([  float(ask['price'])
-                                for ask
-                                in orderbook["asks"] ])
-        except (KeyError, ValueError):
-            lowest_ask = 0.
-
-        try:
-            bids = [ float(bid)
-                     for bid
-                     in orderbook["bids"] ]
-        except (KeyError, ValueError):
-            bids = [ 0. , 0. ]
-
-        try:
-            highest_bid = max([ float(bid['price'])
-                                for bid
-                                in orderbook["bids"] ])
-        except (KeyError, ValueError):
-            highest_bid = 0.
+        asks, lowest_ask, bids, highest_bid = self.fetch_orderbook()
 
         timestamp_right_now = datetime.now().strftime("%s") // 1000
         timestamp_24h_ago = int((datetime.now() - timedelta(1000)).strftime("%s")) // 1000
@@ -96,6 +64,7 @@ class Fetcher:
                                                                               quote_currency,
                                                                               timestamp_24h_ago )
 
+        #TODO: figure this one out as well...
         #to make sure swaps are in the ascending order
         #swaps_last_24h = sorted( swaps_last_24h,
         #                         key=lambda q: q["events"][0]["timestamp"] )
@@ -117,30 +86,36 @@ class Fetcher:
                 lowest_price_24h  = min(swap_prices)
             except ValueError:
                 lowest_price_24h  = 0.
+
             try:
                 highest_price_24h = max(swap_prices)
             except ValueError:
                 highest_price_24h = 0.
 
-            price_start_24h = swap_prices[0]  if swap_prices else 0.
-            last_price      = swap_prices[-1] if swap_prices else 0.
+            price_start_24h = swap_prices[0]  
+                              if swap_prices 
+                              else 0.
+            last_price      = swap_prices[-1]
+                              if swap_prices 
+                              else 0.
 
             price_change_24h = ( (
                                     last_price
                                     -
                                     price_start_24h 
-                                 )
+                                  )
                                     /
                                     100.
                                 )
+            uuid = first_event['uuid']
 
             #TODO: figure out type buy/sell
             self.trades.append({
-                              "​trade_id​"​:3523643,
-                        ​         "price"​:"0.01",
-                        ​   "base_volume"​:"569000",
-                          ​"quote_volume"​:"0.01000000",
-                        ​     "timestamp"​:"1585177482652",
+                              "​trade_id​"​: uuid,
+                        ​         "price"​: swap_price,
+                        ​   "base_volume"​: base_volume,
+                          ​"quote_volume"​: quote_volume,
+                        ​     "timestamp"​: timestamp_right_now,
                                   "type"​:"sell"
             })
 
@@ -171,14 +146,49 @@ class Fetcher:
 
         #TODO: figure out sorting by best asks/bids
         self.orderbook[pair] = {
-                            "timestamp"​:"1585177482652",
+                            "timestamp"​: datetime.now(),
                                  "bids"​: bids,
                                  ​"asks"​: asks
         }
 
 
+    def fetch_orderbook(base_currency, quote_currency):
+        mm2_localhost = "http://127.0.0.1:7783"
+        mm2_username  = "testuser"
+        orderbook     = get_orderbook( mm2_localhost,
+                                       mm2_username,
+                                       base_currency,
+                                       quote_currency )
 
+        try:
+            asks = [ ask
+                     for ask
+                     in orderbook["asks"] ]
+        except (KeyError, ValueError):
+            asks = []
 
+        try:
+            lowest_ask = min([  float(ask['price'])
+                                for ask
+                                in orderbook["asks"] ])
+        except (KeyError, ValueError):
+            lowest_ask = 0.
+
+        try:
+            bids = [ float(bid)
+                     for bid
+                     in orderbook["bids"] ]
+        except (KeyError, ValueError):
+            bids = []
+
+        try:
+            highest_bid = max([ float(bid['price'])
+                                for bid
+                                in orderbook["bids"] ])
+        except (KeyError, ValueError):
+            highest_bid = 0.
+
+        return asks, lowest_ask, bids, highest_bid
 
 
 
