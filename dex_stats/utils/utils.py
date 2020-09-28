@@ -21,7 +21,7 @@ def remove_exponent(d):
 
 
 def enforce_float( num : [float, int, str] ) -> float:
-    return float("{:.10f}".format(num))
+    return "{:.28}".format(num)
 
 
 def numforce_float(num) -> float:

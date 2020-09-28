@@ -3,14 +3,15 @@ import time
 import json
 import logging
 from datetime import date, datetime, timedelta
+from itertools import permutations
+from decimal import *
 
 from utils import adex_calls
-from utils import adex_tickers
+from utils.adex_tickers import tickers
 from MongoAPI import MongoAPI
 from utils.adex_calls import get_orderbook
 from utils.utils import enforce_float
 from utils.utils import measure
-
 
 
 class Fetcher:
@@ -22,10 +23,10 @@ class Fetcher:
         #endpoint data variables
         self.summary    = []
         self.ticker     = {}
-        self.orderbook  = []
+        self.orderbook  = {}
         self.trades     = []
 
-        self.possible_pairs = list(itertools.permutations(adex_tickers, 2))
+        self.possible_pairs = list(permutations(tickers, 2))
         self.pairs = self.mongo.get_trading_pairs()
 
 
@@ -38,6 +39,16 @@ class Fetcher:
             print("\n{} --> {}".format(c, summary))
 
 
+        for c, trade in enumerate(self.trades):
+            print("\n{} --> {}".format(c, trade))
+
+        for c, orderbook in enumerate(self.orderbook.items()):
+            print("\n{} --> {}".format(c, orderbook))
+
+        for c, tick in enumerate(self.ticker.items()):
+            print("\n{} --> {}".format(c, tick))
+
+
     #TODO: Add zero-calls for non-existent tickers
     @measure
     def fetch_data_for_existing_pair(self, pair):
@@ -45,20 +56,20 @@ class Fetcher:
         base_currency  = trading_pairs[0]
         quote_currency = trading_pairs[1]
 
-        last_price   = 0.
-        lowest_ask   = 0.
-        highest_bid  = 0.
-        base_volume  = 0.
-        quote_volume = 0.
+        last_price   = Decimal(0)
+        lowest_ask   = Decimal(0)
+        highest_bid  = Decimal(0)
+        base_volume  = Decimal(0)
+        quote_volume = Decimal(0)
 
         swap_prices       = list()
-        price_change_24h  = 0.
-        highest_price_24h = 0.
-        lowest_price_24h  = 0.
+        price_change_24h  = Decimal(0)
+        highest_price_24h = Decimal(0)
+        lowest_price_24h  = Decimal(0)
 
         asks, lowest_ask, bids, highest_bid = self.fetch_orderbook(base_currency, quote_currency)
 
-        timestamp_right_now = datetime.now().strftime("%s") // 1000
+        timestamp_right_now = int(datetime.now().strftime("%s")) // 1000
         timestamp_24h_ago = int((datetime.now() - timedelta(1000)).strftime("%s")) // 1000
         swaps_last_24h    = self.mongo.find_swaps_for_market_since_timestamp( base_currency,
                                                                               quote_currency,
@@ -71,53 +82,51 @@ class Fetcher:
 
         for swap in swaps_last_24h:
             first_event = swap["events"][0]["event"]["data"]
-
+            
             swap_price  = (
-                            enforce_float(first_event["taker_amount"])
+                            Decimal(first_event["taker_amount"])
                             /
-                            enforce_float(first_event["maker_amount"])
+                            Decimal(first_event["maker_amount"])
                           )
             swap_prices.append(swap_price)
 
-            base_volume  += enforce_float(first_event["maker_amount"])
-            quote_volume += enforce_float(first_event["taker_amount"])
+            base_volume  += Decimal(first_event["maker_amount"])
+            quote_volume += Decimal(first_event["taker_amount"])
 
             try:
                 lowest_price_24h  = min(swap_prices)
             except ValueError:
-                lowest_price_24h  = 0.
+                lowest_price_24h  = Decimal(0)
 
             try:
                 highest_price_24h = max(swap_prices)
             except ValueError:
-                highest_price_24h = 0.
+                highest_price_24h = Decimal(0)
 
-            price_start_24h = swap_prices[0]  
-                              if swap_prices 
-                              else 0.
-            last_price      = swap_prices[-1]
-                              if swap_prices 
-                              else 0.
+            price_start_24h = ( swap_prices[0]  
+                                if swap_prices 
+                                else Decimal(0) )
+            last_price      = ( swap_prices[-1]
+                                if swap_prices 
+                                else Decimal(0) )
 
-            price_change_24h = ( (
-                                    last_price
-                                    -
-                                    price_start_24h 
-                                  )
-                                    /
-                                    100.
+            price_change_24h = (  (
+                                     last_price
+                                     -
+                                     price_start_24h
+                                   ) /
+                                     Decimal(100)
                                 )
-            uuid = first_event['uuid']
 
             #TRADES CALL
             #TODO: figure out type buy/sell
             self.trades.append({
-                             "​trade_id​" ​: uuid,
-                        ​        "price"​ : swap_price,
-                        ​  "base_volume" ​: base_volume,
-                         ​"quote_volume"​ : quote_volume,
-                        ​    "timestamp"​ : timestamp_right_now,
-                                 "type"​ : "sell"
+                            "trade_id" : first_event['uuid'],
+                              "price"  : enforce_float(swap_price),
+                         "base_volume" : enforce_float(base_volume),
+                        "quote_volume" : enforce_float(quote_volume),
+                           "timestamp" : timestamp_right_now,
+                                "type" : "sell"
             })
 
         #SUMMARY CALL
@@ -139,26 +148,26 @@ class Fetcher:
         #TICKER CALL
         #TODO: figure out base/quote id --> https://docs.google.com/document/d/1a5JfNE8aXusvfZBnEokwzp1-vGNJ_SPo-jIXhfnnEYE/edit
         self.ticker[pair] = {
-                            ​  "base_id" ​: "0",
-                             "quote_id"​ : "0",
-                           ​"last_price" ​: last_price,
-                         "quote_volume"​ : quote_volume,
-                          "base_volume"​ : base_volume,
-                             "isFrozen"​ : "0"
+                              "base_id" : "0",
+                             "quote_id" : "0",
+                           "last_price" : enforce_float(last_price),
+                         "quote_volume" : enforce_float(quote_volume),
+                          "base_volume" : enforce_float(base_volume),
+                             "isFrozen" : "0"
         }
 
         #ORDERBOOK CALL
         #TODO: figure out sorting by best asks/bids
         self.orderbook[pair] = {
-                            "timestamp"​: datetime.now().strftime("%s"),
-                                 "bids"​: bids,
-                                 ​"asks"​: asks
+                            "timestamp" : datetime.now().strftime("%s"),
+                                 "bids" : bids,
+                                 "asks" : asks
         }
 
 
 
 
-    def fetch_orderbook(base_currency, quote_currency):
+    def fetch_orderbook(self, base_currency, quote_currency):
         mm2_localhost = "http://127.0.0.1:7783"
         mm2_username  = "testuser"
         orderbook     = get_orderbook( mm2_localhost,
@@ -177,10 +186,10 @@ class Fetcher:
                                 for ask
                                 in orderbook["asks"] ])
         except (KeyError, ValueError):
-            lowest_ask = 0.
+            lowest_ask = Decimal(0)
 
         try:
-            bids = [ float(bid)
+            bids = [ bid
                      for bid
                      in orderbook["bids"] ]
         except (KeyError, ValueError):
@@ -191,7 +200,7 @@ class Fetcher:
                                 for bid
                                 in orderbook["bids"] ])
         except (KeyError, ValueError):
-            highest_bid = 0.
+            highest_bid = Decimal(0)
 
         return asks, lowest_ask, bids, highest_bid
 
@@ -200,18 +209,19 @@ class Fetcher:
 
 
 
-
+    #TODO: create mongo db collections for this, 
+    #      serving json files is not very good
     def save_orderbook_data_as_json(self):
         with open('orderbook_data.json', 'w') as f:
             json.dump(orderbook_data, f)
 
 
-    def save_ticker_endpoint_data_as_json(self):
+    def save_ticker_data_as_json(self):
         with open('ticker.json', 'w') as f:
             json.dump(ticker_endpoint_data, f)
 
 
-    def save_summary_endpoint_data_as_json(self):
+    def save_summary_data_as_json(self):
         with open('summary.json', 'w') as f:
             json.dump(summary_endpoint_data, f)
 
