@@ -35,18 +35,12 @@ class Fetcher:
         for pair in self.pairs:
             self.fetch_data_for_existing_pair(pair)
 
-        for c, summary in enumerate(self.summary):
-            print("\n{} --> {}".format(c, summary))
 
+        self.save_orderbook_data_as_json()
+        self.save_summary_data_as_json()
+        self.save_ticker_data_as_json()
+        self.save_trades_data_as_json()
 
-        for c, trade in enumerate(self.trades):
-            print("\n{} --> {}".format(c, trade))
-
-        for c, orderbook in enumerate(self.orderbook.items()):
-            print("\n{} --> {}".format(c, orderbook))
-
-        for c, tick in enumerate(self.ticker.items()):
-            print("\n{} --> {}".format(c, tick))
 
 
     #TODO: Add zero-calls for non-existent tickers
@@ -70,7 +64,7 @@ class Fetcher:
         asks, lowest_ask, bids, highest_bid = self.fetch_orderbook(base_currency, quote_currency)
 
         timestamp_right_now = int(datetime.now().strftime("%s")) // 1000
-        timestamp_24h_ago = int((datetime.now() - timedelta(1000)).strftime("%s")) // 1000
+        timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s")) // 1000
         swaps_last_24h    = self.mongo.find_swaps_for_market_since_timestamp( base_currency,
                                                                               quote_currency,
                                                                               timestamp_24h_ago )
@@ -119,18 +113,16 @@ class Fetcher:
                                 )
 
             #TRADES CALL
-            #TODO: figure out type buy/sell
             self.trades.append({
                             "trade_id" : first_event['uuid'],
                               "price"  : enforce_float(swap_price),
                          "base_volume" : enforce_float(base_volume),
                         "quote_volume" : enforce_float(quote_volume),
-                           "timestamp" : timestamp_right_now,
-                                "type" : "sell"
+                           "timestamp" : "{}".format(timestamp_right_now),
+                                "type" : "buy"
             })
 
         #SUMMARY CALL
-        #TODO: figure out exponents.
         self.summary.append({
                         "trading_pairs" : pair,
                         "base_currency" : base_currency,
@@ -212,23 +204,23 @@ class Fetcher:
     #TODO: create mongo db collections for this, 
     #      serving json files is not very good
     def save_orderbook_data_as_json(self):
-        with open('orderbook_data.json', 'w') as f:
-            json.dump(orderbook_data, f)
+        with open('../data/orderbook.json', 'w') as f:
+            json.dump(self.orderbook, f)
 
 
     def save_ticker_data_as_json(self):
-        with open('ticker.json', 'w') as f:
-            json.dump(ticker_endpoint_data, f)
+        with open('../data/ticker.json', 'w') as f:
+            json.dump(self.ticker, f)
 
 
     def save_summary_data_as_json(self):
-        with open('summary.json', 'w') as f:
-            json.dump(summary_endpoint_data, f)
+        with open('../data/summary.json', 'w') as f:
+            json.dump(self.summary, f)
 
 
     def save_trades_data_as_json(self):
-        with open('trades.json', 'w') as f:
-            json.dump(trades_data, f)
+        with open('../data/trades.json', 'w') as f:
+            json.dump(self.trades, f)
 
 
 
@@ -257,7 +249,6 @@ class Fetcher:
 if __name__ == "__main__":
     f = Fetcher()
     f.pipeline()
-
 
 
 

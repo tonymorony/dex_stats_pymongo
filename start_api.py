@@ -11,7 +11,7 @@ api = Api(app)
 @api.route('/api/v1/summary')
 class Summary(Resource):
     def get(self):
-        with open('summary.json') as json_file:
+        with open('data/summary.json') as json_file:
             data = json.load(json_file)
         return jsonify(data)
 
@@ -19,7 +19,7 @@ class Summary(Resource):
 @api.route('/api/v1/ticker')
 class Ticker(Resource):
     def get(self):
-        with open('ticker.json') as json_file:
+        with open('data/ticker.json') as json_file:
             data = json.load(json_file)
         return jsonify(data)
 
@@ -27,7 +27,7 @@ class Ticker(Resource):
 @api.route('/api/v1/orderbook/<market_pair>')
 class Orderbook(Resource):
     def get(self, market_pair):
-        with open('orderbook_data.json') as json_file:
+        with open('data/orderbook.json') as json_file:
             #TODO: handle non existent pair
             pairs_data = json.load(json_file)
             for pair in pairs_data:
@@ -39,7 +39,7 @@ class Orderbook(Resource):
 @api.route('/api/v1/trades/<market_pair>')
 class Trades(Resource):
     def get(self, market_pair):
-        with open('trades.json') as json_file:
+        with open('data/trades.json') as json_file:
             #TODO: handle non existent pair
             pairs_data = json.load(json_file)
             for pair in pairs_data:

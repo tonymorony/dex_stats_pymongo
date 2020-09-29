@@ -1,9 +1,16 @@
 appdirs==1.4.4
+certifi==2020.6.20
+chardet==3.0.4
 distlib==0.3.1
 filelock==3.0.12
+idna==2.10
+numpy==1.19.2
 pathtools==0.1.2
 protobuf==3.13.0
 pymongo==3.11.0
+requests==2.24.0
+simplejson==3.17.2
 six==1.15.0
+urllib3==1.25.10
 virtualenv==20.0.31
 watchdog==0.10.3
