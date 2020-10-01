@@ -17,8 +17,7 @@ from utils.swap_events import (taker_swap_error_events,
 class Parser():
     def __init__(self,                async_mode=False,
                  data_analysis=False, use_swap_events=True,
-                 mongo_port=27017,    mongo_ip='localhost',
-                 swaps_folder_path="../../dex_stats-data/STATS/MAKER/"):
+                 swaps_folder_path="/home/dathbezumniy/seed_db/seed_db/64ae8510aac9546d5e7704e31ce1774513864555/SWAPS/STATS/MAKER"):
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
         #parser config
@@ -30,7 +29,7 @@ class Parser():
         self.taker_folder_path = swaps_folder_path[:-6] + 'TAKER/'
 
         #init mongo client connection and create swaps database
-        self.client = MongoClient('mongodb://{}:{}/'.format(mongo_ip, mongo_port))
+        self.client = MongoClient('mongodb://localhost:27017/')
         self.swaps  = self.client.swaps
 
         #creating main collections for successful/failed swaps

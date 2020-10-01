@@ -63,8 +63,8 @@ class Fetcher:
 
         asks, lowest_ask, bids, highest_bid = self.fetch_orderbook(base_currency, quote_currency)
 
-        timestamp_right_now = int(datetime.now().strftime("%s")) // 1000
-        timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s")) // 1000
+        timestamp_right_now = int(datetime.now().strftime("%s"))
+        timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s"))
         swaps_last_24h    = self.mongo.find_swaps_for_market_since_timestamp( base_currency,
                                                                               quote_currency,
                                                                               timestamp_24h_ago )
