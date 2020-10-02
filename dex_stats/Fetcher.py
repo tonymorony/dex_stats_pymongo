@@ -120,7 +120,7 @@ class Fetcher:
                               "price"  : enforce_float(swap_price),
                          "base_volume" : enforce_float(base_volume),
                         "quote_volume" : enforce_float(quote_volume),
-                           "timestamp" : "{}".format(timestamp_right_now),
+                           "timestamp" : first_event['started_at'],
                                 "type" : "buy"
             })
 
