@@ -1,4 +1,4 @@
-tickers =  [
+adex_tickers =  [
     "AWC",     "AXE",     "BAT",     "BCH",       "BET",
     "BOTS",    "BTC",     "BUSD",    "CCL",       "CHIPS",
     "CRYPTO",  "DAI",     "DASH",    "DEX",       "DGB",
