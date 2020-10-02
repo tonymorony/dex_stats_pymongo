@@ -24,7 +24,7 @@ class Fetcher:
         self.summary    = []
         self.ticker     = {}
         self.orderbook  = {}
-        self.trades     = []
+        self.trades     = {}
 
         self.possible_pairs = list(permutations(tickers, 2))
         self.pairs = self.mongo.get_trading_pairs()
@@ -49,6 +49,7 @@ class Fetcher:
         trading_pairs  = pair.split("_")
         base_currency  = trading_pairs[0]
         quote_currency = trading_pairs[1]
+        self.trades[pair] = []
 
         last_price   = Decimal(0)
         lowest_ask   = Decimal(0)
@@ -97,8 +98,8 @@ class Fetcher:
             except ValueError:
                 highest_price_24h = Decimal(0)
 
-            price_start_24h = ( swap_prices[0]  
-                                if swap_prices 
+            price_start_24h = ( swap_prices[0]
+                                if swap_prices
                                 else Decimal(0) )
             last_price      = ( swap_prices[-1]
                                 if swap_prices 
@@ -113,7 +114,8 @@ class Fetcher:
                                 )
 
             #TRADES CALL
-            self.trades.append({
+            
+            self.trades[pair].append({
                             "trade_id" : first_event['uuid'],
                               "price"  : enforce_float(swap_price),
                          "base_volume" : enforce_float(base_volume),
@@ -151,7 +153,7 @@ class Fetcher:
         #ORDERBOOK CALL
         #TODO: figure out sorting by best asks/bids
         self.orderbook[pair] = {
-                            "timestamp" : datetime.now().strftime("%s"),
+                            "timestamp" : timestamp_right_now,
                                  "bids" : bids,
                                  "asks" : asks
         }
