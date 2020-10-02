@@ -4,7 +4,7 @@ import json
 import logging
 
 from utils.utils import measure
-from utils.adex_tickers import tickers
+from utils.adex_tickers import adex_tickers
 from pymongo import MongoClient, ReturnDocument
 from ParserError import ArgumentInputParserError
 from utils.swap_events import (taker_swap_error_events,
@@ -21,7 +21,7 @@ class Parser():
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
         #parser config
-        self.adex_tickers      = tickers
+        self.adex_tickers      = adex_tickers
         self.async_mode        = async_mode
         self.data_analysis     = data_analysis
         self.use_swap_events   = use_swap_events
