@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import flask
 import json
 from flask import jsonify, request
@@ -12,41 +11,41 @@ api = Api(app)
 @api.route('/api/v1/summary')
 class Summary(Resource):
     def get(self):
-        with open('summary.json') as json_file:
-            data = json.load(json_file)
-        return jsonify(data)
+        with open('data/summary.json') as f:
+            summary = json.load(f)
+        return jsonify(summary)
 
 
 @api.route('/api/v1/ticker')
 class Ticker(Resource):
     def get(self):
-        with open('ticker.json') as json_file:
-            data = json.load(json_file)
-        return jsonify(data)
+        with open('data/ticker.json') as f:
+            ticker = json.load(f)
+        return jsonify(ticker)
 
 
 @api.route('/api/v1/orderbook/<market_pair>')
 class Orderbook(Resource):
     def get(self, market_pair):
-        with open('orderbook_data.json') as json_file:
+        with open('data/orderbook.json') as f:
             #TODO: handle non existent pair
-            pairs_data = json.load(json_file)
-            for pair in pairs_data:
-                if market_pair in pair.keys():
-                    data = pair
-        return jsonify(data)
+            orderbook = json.load(f)
+            try:
+                return jsonify(orderbook[market_pair])
+            except KeyError:
+                return 'no data'
 
 
 @api.route('/api/v1/trades/<market_pair>')
 class Trades(Resource):
     def get(self, market_pair):
-        with open('trades.json') as json_file:
+        with open('data/trades.json') as f:
             #TODO: handle non existent pair
-            pairs_data = json.load(json_file)
-            for pair in pairs_data:
-                if market_pair in pair.keys():
-                    data = pair
-        return jsonify(data)
+            trades = json.load(f)
+            try:
+                return jsonify(trades[market_pair])
+            except KeyError:
+                return 'no data'
 
 
 if __name__ == '__main__':
