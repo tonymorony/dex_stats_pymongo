@@ -24,5 +24,15 @@ def enforce_float( num : [float, int, str] ) -> float:
     return "{:.10f}".format(num)
 
 
+def sort_orders(orders):
+    return sorted(orders, key=lambda order: order[0])
+
+
+def prettify_orders(orders):
+    return [ [enforce_float(order[0]), enforce_float(order[1])]
+              for order
+              in orders ]
+
+
 def numforce_float(num) -> float:
     return enforce_float(np.format_float_positional(num, unique=True, trim='-', precision=10))

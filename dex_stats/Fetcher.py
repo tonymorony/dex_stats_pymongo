@@ -12,7 +12,8 @@ from MongoAPI import MongoAPI
 from utils.adex_calls import get_orderbook
 from utils.utils import enforce_float
 from utils.utils import measure
-
+from utils.utils import sort_orders
+from utils.utils import prettify_orders
 
 class Fetcher:
     def __init__(self):
@@ -102,7 +103,7 @@ class Fetcher:
                                 if swap_prices
                                 else Decimal(0) )
             last_price      = ( swap_prices[-1]
-                                if swap_prices 
+                                if swap_prices
                                 else Decimal(0) )
 
             price_change_24h = (  (
@@ -114,7 +115,6 @@ class Fetcher:
                                 )
 
             #TRADES CALL
-            
             self.trades[pair].append({
                             "trade_id" : first_event['uuid'],
                               "price"  : enforce_float(swap_price),
@@ -154,11 +154,9 @@ class Fetcher:
         #TODO: figure out sorting by best asks/bids
         self.orderbook[pair] = {
                             "timestamp" : timestamp_right_now,
-                                 "bids" : bids,
-                                 "asks" : asks
+                                 "bids" : prettify_orders(sort_orders(bids)),
+                                 "asks" : prettify_orders(sort_orders(asks))
         }
-
-
 
 
     def fetch_orderbook(self, base_currency, quote_currency):
@@ -169,11 +167,18 @@ class Fetcher:
                                        base_currency,
                                        quote_currency )
         try:
-            asks = [ ask
+            asks = [ [float(ask['price']), float(ask['maxvolume'])]
                      for ask
                      in orderbook["asks"] ]
         except (KeyError, ValueError):
             asks = []
+        
+        try:
+            bids = [ [float(bid['price']), float(bid['maxvolume'])]
+                     for bid
+                     in orderbook["bids"] ]
+        except (KeyError, ValueError):
+            bids = []
 
         try:
             lowest_ask = min([  float(ask['price'])
@@ -183,13 +188,6 @@ class Fetcher:
             lowest_ask = Decimal(0)
 
         try:
-            bids = [ bid
-                     for bid
-                     in orderbook["bids"] ]
-        except (KeyError, ValueError):
-            bids = []
-
-        try:
             highest_bid = max([ float(bid['price'])
                                 for bid
                                 in orderbook["bids"] ])
@@ -197,9 +195,6 @@ class Fetcher:
             highest_bid = Decimal(0)
 
         return asks, lowest_ask, bids, highest_bid
-
-
-
 
 
 
