@@ -27,13 +27,13 @@ class Fetcher:
         self.orderbook  = {}
         self.trades     = {}
 
-        self.possible_pairs = list(["{}_{}".format(perm[0], perm[1]) 
-                                    for perm 
+        self.possible_pairs = list(["{}_{}".format(perm[0], perm[1])
+                                    for perm
                                     in permutations(adex_tickers, 2)])
         self.pairs = self.mongo.get_trading_pairs()
-        self.null_pairs = [ x 
-                            for x 
-                            in self.possible_pairs 
+        self.null_pairs = [ x
+                            for x
+                            in self.possible_pairs
                             if x not in self.pairs ]
 
 
@@ -62,6 +62,7 @@ class Fetcher:
         highest_bid  = Decimal(0)
         base_volume  = Decimal(0)
         quote_volume = Decimal(0)
+        last_trade_time = Decimal(0)
 
         swap_prices       = list()
         price_change_24h  = Decimal(0)
@@ -83,7 +84,7 @@ class Fetcher:
 
         for swap in swaps_last_24h:
             first_event = swap["events"][0]["event"]["data"]
-            
+
             swap_price  = (
                             Decimal(first_event["taker_amount"])
                             /
@@ -93,6 +94,10 @@ class Fetcher:
 
             base_volume  += Decimal(first_event["maker_amount"])
             quote_volume += Decimal(first_event["taker_amount"])
+            swap_timestamp = swap["events"][0]["timestamp"] // 1000
+
+            if swap_timestamp > last_trade_time:
+                last_trade_time = swap_timestamp
 
             try:
                 lowest_price_24h  = min(swap_prices)
@@ -137,11 +142,12 @@ class Fetcher:
                            "last_price" : enforce_float(last_price),
                            "lowest_ask" : enforce_float(lowest_ask),
                           "highest_bid" : enforce_float(highest_bid),
-                          "base_volume" : enforce_float(base_volume),
-                         "quote_volume" : enforce_float(quote_volume),
+                      "base_volume_24h" : enforce_float(base_volume),
+                     "quote_volume_24h" : enforce_float(quote_volume),
              "price_change_percent_24h" : enforce_float(price_change_24h),
                     "highest_price_24h" : enforce_float(highest_price_24h),
-                     "lowest_price_24h" : enforce_float(lowest_price_24h)
+                     "lowest_price_24h" : enforce_float(lowest_price_24h),
+            "last_trade_time" : str(last_trade_time)
         })
 
         #TICKER CALL
@@ -207,7 +213,7 @@ class Fetcher:
                      in orderbook["asks"] ]
         except (KeyError, ValueError):
             asks = []
-        
+
         try:
             bids = [ [float(bid['price']), float(bid['maxvolume'])]
                      for bid
@@ -233,7 +239,7 @@ class Fetcher:
 
 
 
-    #TODO: create mongo db collections for this, 
+    #TODO: create mongo db collections for this,
     #      serving json files is not very good
     def save_orderbook_data_as_json(self):
         with open('../data/orderbook.json', 'w') as f:
@@ -281,3 +287,4 @@ class Fetcher:
 if __name__ == "__main__":
     f = Fetcher()
     f.pipeline()
+    
