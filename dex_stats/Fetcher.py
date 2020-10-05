@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from itertools import permutations
 from decimal import *
 
+from requests.exceptions import ConnectionError
 from utils import adex_calls
 from utils.adex_tickers import adex_tickers
 from MongoAPI import MongoAPI
@@ -68,7 +69,8 @@ class Fetcher:
         highest_price_24h = Decimal(0)
         lowest_price_24h  = Decimal(0)
 
-        asks, lowest_ask, bids, highest_bid = self.fetch_orderbook(base_currency, quote_currency)
+        mm_orderbook = self.fetch_mm2_orderbook(base_currency, quote_currency)
+        asks, lowest_ask, bids, highest_bid = self.parse_orderbook(mm_orderbook)
 
         timestamp_right_now = int(datetime.now().strftime("%s"))
         timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s"))
@@ -194,13 +196,7 @@ class Fetcher:
         }
 
 
-    def fetch_orderbook(self, base_currency, quote_currency):
-        mm2_localhost = "http://127.0.0.1:7783"
-        mm2_username  = "testuser"
-        orderbook     = get_orderbook( mm2_localhost,
-                                       mm2_username,
-                                       base_currency,
-                                       quote_currency )
+    def parse_orderbook(self, orderbook):
         try:
             asks = [ [float(ask['price']), float(ask['maxvolume'])]
                      for ask
@@ -232,9 +228,17 @@ class Fetcher:
         return asks, lowest_ask, bids, highest_bid
 
 
+    def fetch_mm2_orderbook(self, base_currency, quote_currency):
+        mm2_localhost = "http://127.0.0.1:7783"
+        mm2_username  = "testuser"
+        return get_orderbook(mm2_localhost,
+                             mm2_username,
+                             base_currency,
+                             quote_currency)
+
 
     #TODO: create mongo db collections for this, 
-    #      serving json files is not very good
+    #      serving json files is probably! not very good
     def save_orderbook_data_as_json(self):
         with open('../data/orderbook.json', 'w') as f:
             json.dump(self.orderbook, f)
