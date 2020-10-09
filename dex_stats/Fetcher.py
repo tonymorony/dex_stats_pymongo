@@ -16,6 +16,8 @@ from utils.utils import measure
 from utils.utils import sort_orders
 from utils.utils import prettify_orders
 
+
+
 class Fetcher:
     def __init__(self):
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
@@ -29,12 +31,12 @@ class Fetcher:
         self.trades     = {}
 
         self.possible_pairs = list(["{}_{}".format(perm[0], perm[1]) 
-                                    for perm 
+                                    for perm
                                     in permutations(adex_tickers, 2)])
         self.pairs = self.mongo.get_trading_pairs()
-        self.null_pairs = [ x 
-                            for x 
-                            in self.possible_pairs 
+        self.null_pairs = [ x
+                            for x
+                            in self.possible_pairs
                             if x not in self.pairs ]
 
 
@@ -158,7 +160,8 @@ class Fetcher:
         self.orderbook[pair] = {
                             "timestamp" : "{}".format(timestamp_right_now),
                                  "bids" : prettify_orders(sort_orders(bids)),
-                                 "asks" : prettify_orders(sort_orders(asks))
+                                 "asks" : prettify_orders(sort_orders(asks, 
+                                                                      reverse=True))
         }
 
 
