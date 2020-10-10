@@ -5,6 +5,11 @@ from datetime import datetime, timedelta
 from decimal import *
 from itertools import permutations
 
+from requests.exceptions import ConnectionError
+from utils import adex_calls
+from utils.adex_tickers import adex_tickers
+
+
 from MongoAPI import MongoAPI
 from utils.adex_calls import get_orderbook
 from utils.adex_tickers import adex_tickers
@@ -12,6 +17,8 @@ from utils.utils import enforce_float
 from utils.utils import measure
 from utils.utils import prettify_orders
 from utils.utils import sort_orders
+
+
 
 
 class Fetcher:
@@ -26,14 +33,15 @@ class Fetcher:
         self.orderbook = {}
         self.trades = {}
 
-        self.possible_pairs = list(["{}_{}".format(perm[0], perm[1])
+
+        self.possible_pairs = list(["{}_{}".format(perm[0], perm[1]) 
                                     for perm
                                     in permutations(adex_tickers, 2)])
         self.pairs = self.mongo.get_trading_pairs()
-        self.null_pairs = [x
-                           for x
-                           in self.possible_pairs
-                           if x not in self.pairs]
+        self.null_pairs = [ x
+                            for x
+                            in self.possible_pairs
+                            if x not in self.pairs ]
 
     @measure
     def pipeline(self):
@@ -66,7 +74,8 @@ class Fetcher:
         highest_price_24h = Decimal(0)
         lowest_price_24h = Decimal(0)
 
-        asks, lowest_ask, bids, highest_bid = self.fetch_orderbook(base_currency, quote_currency)
+        mm_orderbook = self.fetch_mm2_orderbook(base_currency, quote_currency)
+        asks, lowest_ask, bids, highest_bid = self.parse_orderbook(mm_orderbook)
 
         timestamp_right_now = int(datetime.now().strftime("%s"))
         timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s"))
@@ -157,9 +166,10 @@ class Fetcher:
 
         # ORDERBOOK CALL
         self.orderbook[pair] = {
-            "timestamp": "{}".format(timestamp_right_now),
-            "bids": prettify_orders(sort_orders(bids)),
-            "asks": prettify_orders(sort_orders(asks))
+                            "timestamp" : "{}".format(timestamp_right_now),
+                                 "bids" : prettify_orders(sort_orders(bids)),
+                                 "asks" : prettify_orders(sort_orders(asks, 
+                                                                      reverse=True))
         }
 
     def fetch_data_for_null_pair(self, pair):
@@ -195,13 +205,8 @@ class Fetcher:
             "asks": []
         }
 
-    def fetch_orderbook(self, base_currency, quote_currency):
-        mm2_localhost = "http://127.0.0.1:7783"
-        mm2_username = "testuser"
-        orderbook = get_orderbook(mm2_localhost,
-                                  mm2_username,
-                                  base_currency,
-                                  quote_currency)
+
+    def parse_orderbook(self, orderbook):
         try:
             asks = [[float(ask['price']), float(ask['maxvolume'])]
                     for ask
@@ -232,8 +237,20 @@ class Fetcher:
 
         return asks, lowest_ask, bids, highest_bid
 
-    # TODO: create mongo db collections for this,
-    #      serving json files is not very good
+
+
+    def fetch_mm2_orderbook(self, base_currency, quote_currency):
+        mm2_localhost = "http://127.0.0.1:7783"
+        mm2_username  = "testuser"
+        return get_orderbook(mm2_localhost,
+                             mm2_username,
+                             base_currency,
+                             quote_currency)
+
+
+    #TODO: create mongo db collections for this, 
+    #      serving json files is probably! not very good
+
     def save_orderbook_data_as_json(self):
         with open('../data/orderbook.json', 'w') as f:
             json.dump(self.orderbook, f)

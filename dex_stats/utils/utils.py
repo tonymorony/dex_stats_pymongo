@@ -24,8 +24,8 @@ def enforce_float( num : [float, int, str] ) -> float:
     return "{:.10f}".format(num)
 
 
-def sort_orders(orders):
-    return sorted(orders, key=lambda order: order[0])
+def sort_orders(orders, reverse=False):
+    return sorted(orders, key=lambda order: order[0], reverse=reverse)
 
 
 def prettify_orders(orders):
