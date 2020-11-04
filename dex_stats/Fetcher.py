@@ -190,7 +190,7 @@ class Fetcher:
                 "type": "buy"
             })
 
-        unique_participants = set(swaps_participants)
+        unique_participants = list(set(swaps_participants))
         # SUMMARY CALL
         self.summary.append({
             "trading_pairs": pair,
