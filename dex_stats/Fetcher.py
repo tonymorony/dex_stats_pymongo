@@ -112,20 +112,32 @@ class Fetcher:
                     # adding taker addy
                     if event["event"]["type"] == "TakerFeeSent":
                         swaps_participants.append(event["event"]["data"]["from"][0])
-                        swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        else:
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
                     # adding maker addy
                     if event["event"]["type"] == "MakerPaymentReceived":
                         swaps_participants.append(event["event"]["data"]["from"][0])
-                        swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        else:
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
                 elif "TakerFeeValidated" in swap["success_events"]:
                     # adding taker addy
                     if event["event"]["type"] == "TakerFeeValidated":
                         swaps_participants.append(event["event"]["data"]["from"][0])
-                        swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        else:
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
                     # adding maker addy
                     if event["event"]["type"] == "MakerPaymentSent":
                         swaps_participants.append(event["event"]["data"]["from"][0])
-                        swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        else:
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
 
             first_event = swap["events"][0]["event"]["data"]
 
