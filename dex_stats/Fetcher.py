@@ -125,7 +125,7 @@ class Fetcher:
             first_event = swap["events"][0]["event"]["data"]
 
 
-        unique_participants = len(set(swaps_participants))
+            unique_participants = len(set(swaps_participants))
 
             swap_price = (
                     Decimal(first_event["taker_amount"])
