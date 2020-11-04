@@ -112,16 +112,20 @@ class Fetcher:
                     # adding taker addy
                     if event["event"]["type"] == "TakerFeeSent":
                         swaps_participants.append(event["event"]["data"]["from"][0])
+                        swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
                     # adding maker addy
                     if event["event"]["type"] == "MakerPaymentReceived":
                         swaps_participants.append(event["event"]["data"]["from"][0])
+                        swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
                 elif "TakerFeeValidated" in swap["success_events"]:
                     # adding taker addy
                     if event["event"]["type"] == "TakerFeeValidated":
                         swaps_participants.append(event["event"]["data"]["from"][0])
+                        swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
                     # adding maker addy
                     if event["event"]["type"] == "MakerPaymentSent":
                         swaps_participants.append(event["event"]["data"]["from"][0])
+                        swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
 
             first_event = swap["events"][0]["event"]["data"]
 
@@ -174,14 +178,15 @@ class Fetcher:
                 "type": "buy"
             })
 
-        unique_participants = len(set(swaps_participants))
+        unique_participants = set(swaps_participants)
         # SUMMARY CALL
         self.summary.append({
             "trading_pairs": pair,
             "base_currency": base_currency,
             "quote_currency": quote_currency,
             "swaps_count_total": swaps_count,
-            "swaps_participants_total": unique_participants
+            "swaps_unique_participants": unique_participants,
+            "swaps_leaderboard": swaps_leaderboard
         })
 
         # TICKER CALL
