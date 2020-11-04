@@ -107,14 +107,14 @@ class Fetcher:
 
             for event in swap["events"]:
                 # case for taker statuses
-                if swap["type"] == "Taker":
+                if "TakerFeeSent" in swap["events"]["success_events"]:
                     # adding taker addy
                     if event["event"]["type"] == "TakerFeeSent":
                         swaps_participants.append(event["event"]["data"]["from"][0])
                     # adding maker addy
                     if event["event"]["type"] == "MakerPaymentReceived":
                         swaps_participants.append(event["event"]["data"]["from"][0])
-                elif swap["type"] == "Maker":
+                elif "TakerFeeValidated" in swap["events"]["success_events"]:
                     # adding taker addy
                     if event["event"]["type"] == "TakerFeeValidated":
                         swaps_participants.append(event["event"]["data"]["from"][0])
