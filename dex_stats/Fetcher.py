@@ -177,30 +177,30 @@ class Fetcher:
                 "type": "buy"
             })
 
-        # SUMMARY CALL
-        self.summary.append({
-            "trading_pairs": pair,
-            "base_currency": base_currency,
-            "quote_currency": quote_currency,
-            "swaps_count_total": swaps_count,
-            "swaps_participants_total": unique_participants
-        })
+            # SUMMARY CALL
+            self.summary.append({
+                "trading_pairs": pair,
+                "base_currency": base_currency,
+                "quote_currency": quote_currency,
+                "swaps_count_total": swaps_count,
+                "swaps_participants_total": unique_participants
+            })
+    
+            # TICKER CALL
+            self.ticker[pair] = {
+                "last_price": enforce_float(last_price),
+                "quote_volume": enforce_float(quote_volume),
+                "base_volume": enforce_float(base_volume),
+                "isFrozen": "0"
+            }
 
-        # TICKER CALL
-        self.ticker[pair] = {
-            "last_price": enforce_float(last_price),
-            "quote_volume": enforce_float(quote_volume),
-            "base_volume": enforce_float(base_volume),
-            "isFrozen": "0"
-        }
-
-        # ORDERBOOK CALL
-        self.orderbook[pair] = {
-                            "timestamp" : "{}".format(timestamp_right_now),
-                                 "bids" : prettify_orders(sort_orders(bids)),
-                                 "asks" : prettify_orders(sort_orders(asks, 
-                                                                      reverse=True))
-        }
+            # ORDERBOOK CALL
+            self.orderbook[pair] = {
+                                "timestamp" : "{}".format(timestamp_right_now),
+                                     "bids" : prettify_orders(sort_orders(bids)),
+                                     "asks" : prettify_orders(sort_orders(asks,
+                                                                          reverse=True))
+            }
 
     def fetch_data_for_null_pair(self, pair):
         trading_pairs = pair.split("_")
