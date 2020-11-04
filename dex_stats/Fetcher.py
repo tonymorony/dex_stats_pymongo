@@ -83,12 +83,13 @@ class Fetcher:
         asks, lowest_ask, bids, highest_bid = self.parse_orderbook(mm_orderbook)
 
         timestamp_right_now = int(datetime.now().strftime("%s"))
-        
+
         # TODO: set stress test timestamp here
         timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s"))
         swaps_last_24h = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
                                                                           timestamp_24h_ago)
+        swaps_count = len(swaps_last_24h)
 
         # TODO: figure this one out as well...
         # to make sure swaps are in the ascending order
@@ -152,15 +153,7 @@ class Fetcher:
             "trading_pairs": pair,
             "base_currency": base_currency,
             "quote_currency": quote_currency,
-            "last_price": enforce_float(last_price),
-            "lowest_ask": enforce_float(lowest_ask),
-            "highest_bid": enforce_float(highest_bid),
-            "base_volume_24h": enforce_float(base_volume),
-            "quote_volume_24h": enforce_float(quote_volume),
-            "price_change_percent_24h": enforce_float(price_change_24h),
-            "highest_price_24h": enforce_float(highest_price_24h),
-            "lowest_price_24h": enforce_float(lowest_price_24h),
-            "last_trade_time": str(last_trade_time)
+            "swaps_count": swaps_count
         })
 
         # TICKER CALL
