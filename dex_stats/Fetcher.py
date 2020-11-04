@@ -45,17 +45,22 @@ class Fetcher:
 
     @measure
     def pipeline(self):
-        for pair in self.pairs:
-            self.fetch_data_for_existing_pair(pair)
+        # for pair in self.pairs:
+        #     self.fetch_data_for_existing_pair(pair)
 
-        for pair in self.null_pairs:
-            self.fetch_data_for_null_pair(pair)
+        # for pair in self.null_pairs:
+        #     self.fetch_data_for_null_pair(pair)
+
+        # TODO: set stress test pairs here
+        self.fetch_data_for_existing_pair("RICK_MORTY")
+        self.fetch_data_for_existing_pair("MORTY_RICK")
 
         self.save_orderbook_data_as_json()
         self.save_summary_data_as_json()
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
+    # stress_test edition
     def fetch_data_for_existing_pair(self, pair):
         trading_pairs = pair.split("_")
         base_currency = trading_pairs[0]
@@ -78,6 +83,8 @@ class Fetcher:
         asks, lowest_ask, bids, highest_bid = self.parse_orderbook(mm_orderbook)
 
         timestamp_right_now = int(datetime.now().strftime("%s"))
+        
+        # TODO: set stress test timestamp here
         timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s"))
         swaps_last_24h = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
