@@ -85,7 +85,9 @@ class Fetcher:
         timestamp_right_now = int(datetime.now().strftime("%s"))
 
         # TODO: set stress test timestamp here
-        timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s"))
+        # timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s"))
+        # 2020 year start for testing now
+        timestamp_24h_ago = 1577836800
         swaps_last_24h = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
                                                                           timestamp_24h_ago)
@@ -96,8 +98,34 @@ class Fetcher:
         # swaps_last_24h = sorted( swaps_last_24h,
         #                         key=lambda q: q["events"][0]["timestamp"] )
 
+        swaps_participants = []
+        swaps_leaderboard = {}
+
         for swap in swaps_last_24h:
+
+            # adding swap participants addys
+
+            for event in swap["events"]:
+                # case for taker statuses
+                if swap["type"] == "Taker":
+                    # adding taker addy
+                    if event["event"]["type"] == "TakerFeeSent":
+                        swaps_participants.append(event["event"]["data"]["from"][0])
+                    # adding maker addy
+                    if event["event"]["type"] == "MakerPaymentReceived":
+                        swaps_participants.append(event["event"]["data"]["from"][0])
+                elif swap["type"] == "Maker":
+                    # adding taker addy
+                    if event["event"]["type"] == "TakerFeeValidated":
+                        swaps_participants.append(event["event"]["data"]["from"][0])
+                    # adding maker addy
+                    if event["event"]["type"] == "MakerPaymentSent":
+                        swaps_participants.append(event["event"]["data"]["from"][0])
+
             first_event = swap["events"][0]["event"]["data"]
+
+
+        unique_participants = len(set(swaps_participants))
 
             swap_price = (
                     Decimal(first_event["taker_amount"])
@@ -153,7 +181,8 @@ class Fetcher:
             "trading_pairs": pair,
             "base_currency": base_currency,
             "quote_currency": quote_currency,
-            "swaps_count": swaps_count
+            "swaps_count_total": swaps_count,
+            "swaps_participants_total": unique_participants
         })
 
         # TICKER CALL
