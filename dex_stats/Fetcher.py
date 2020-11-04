@@ -78,6 +78,7 @@ class Fetcher:
         price_change_24h = Decimal(0)
         highest_price_24h = Decimal(0)
         lowest_price_24h = Decimal(0)
+        uniquie_participants = Decimal(0)
 
         mm_orderbook = self.fetch_mm2_orderbook(base_currency, quote_currency)
         asks, lowest_ask, bids, highest_bid = self.parse_orderbook(mm_orderbook)
