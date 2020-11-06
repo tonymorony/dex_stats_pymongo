@@ -64,12 +64,14 @@ class Fetcher:
         # temp dirty trick. have to combine RICK_MORTY and MORTY_RICK into single data set
         stress_test_unique_participants_list = []
         stress_test_unique_participants_count = 0
+        stress_test_swap_counter = 0
         stress_test_leaderboard = {}
         with open('../data/summary.json', 'r') as f:
             data = json.load(f)
             for pair in data:
                 stress_test_unique_participants_list += pair["swaps_unique_participants"]
                 stress_test_leaderboard = Counter(stress_test_leaderboard) + Counter(pair["swaps_leaderboard"])
+                stress_test_swap_counter += pair["swaps_count_total"]
             stress_test_unique_participants_list = list(set(stress_test_unique_participants_list))
             stress_test_unique_participants_count = len(stress_test_unique_participants_list)
             stress_test_leaderboard = dict(sorted(stress_test_leaderboard.items(), key=operator.itemgetter(1),reverse=True))
@@ -80,6 +82,8 @@ class Fetcher:
                 "stress_test_unique_participants_list": stress_test_unique_participants_list,
                 "stress_test_leaderboard": stress_test_leaderboard
             }, f)
+        self.stress_test_summary["stress_test_unique_participants_count"] = stress_test_unique_participants_count
+        self.stress_test_summary["stress_test_total_swaps"] = stress_test_swap_counter
         with open('../data/stress_test_summary.json', 'w') as f:
             json.dump(self.stress_test_summary)
         self.save_ticker_data_as_json()
