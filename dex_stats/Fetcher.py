@@ -31,6 +31,7 @@ class Fetcher:
 
         # endpoint data variables
         self.summary = []
+        self.stress_test_summary = {}
         self.ticker = {}
         self.orderbook = {}
         self.trades = {}
@@ -79,6 +80,8 @@ class Fetcher:
                 "stress_test_unique_participants_list": stress_test_unique_participants_list,
                 "stress_test_leaderboard": stress_test_leaderboard
             }, f)
+        with open('../data/stress_test_summary.json', 'w') as f:
+            json.dump(self.stress_test_summary)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
@@ -110,10 +113,11 @@ class Fetcher:
         # TODO: set stress test timestamp here
         # timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s"))
         # 2020 year start for testing now
-        timestamp_24h_ago = 1577836800
+        stress_test_start = 1577836800
+        stress_test_end =   1609372800
         swaps_last_24h = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
-                                                                          timestamp_24h_ago)
+                                                                          stress_test_start)
         swaps_count = len(swaps_last_24h)
 
         # TODO: figure this one out as well...
@@ -240,6 +244,11 @@ class Fetcher:
                                                                       reverse=True))
         }
 
+        self.stress_test_summary = {
+            "stress_test_start": stress_test_start,
+            "stress_test_end": stress_test_end
+        }
+
     def fetch_data_for_null_pair(self, pair):
         trading_pairs = pair.split("_")
         base_currency = trading_pairs[0]
@@ -304,7 +313,6 @@ class Fetcher:
             highest_bid = Decimal(0)
 
         return asks, lowest_ask, bids, highest_bid
-
 
 
     def fetch_mm2_orderbook(self, base_currency, quote_currency):
