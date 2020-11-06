@@ -67,7 +67,7 @@ class Fetcher:
             data = json.load(f)
             for pair in data:
                 stress_test_unique_participants_list += pair["swaps_unique_participants"]
-                stress_test_leaderboard = Counter(stress_test_leaderboard) + Counter(pair["swaps_ledearboard"])
+                stress_test_leaderboard = Counter(stress_test_leaderboard) + Counter(pair["swaps_leaderboard"])
             stress_test_unique_participants_list = set(stress_test_unique_participants_list)
             stress_test_unique_participants_count = len(stress_test_unique_participants_list)
         # writing into special stress test file
