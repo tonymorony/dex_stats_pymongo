@@ -139,18 +139,19 @@ class Fetcher:
 
         swaps_participants = []
         swaps_leaderboard = {}
-        stress_test_swaps_detailed_data = {}
+        stress_test_swaps_detailed_data = []
 
         for swap in swaps_since_test_start:
             first_event = swap["events"][0]["event"]["data"]
             # filling detailed info about swap
-            stress_test_swaps_detailed_data[swap["uuid"]] = {
-                "time": swap["events"][0]["timestamp"] // 1000,
+            stress_test_swaps_detailed_data[swap["events"][0]["timestamp"] // 1000] = {
+                "uuid": swap["uuid"]
                 "base_coin": trading_pairs[0],
                 "base_coin_amount": format(float(first_event["maker_amount"]), ".10f"),
                 "rel_coin": trading_pairs[1],
                 "rel_coin_amount": format(float(first_event["taker_amount"]), ".10f")
             }
+            stress_test_swaps_detailed_data = dict(sorted(stress_test_swaps_detailed_data.items()))
 
             # adding swap participants addys
 
