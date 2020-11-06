@@ -1,4 +1,6 @@
 import json
+import bson
+
 import logging
 import sys
 from datetime import datetime, timedelta
@@ -125,7 +127,6 @@ class Fetcher:
         swaps_since_test_start = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
                                                                           stress_test_start)
-        self.stress_test_swaps_data = list(swaps_since_test_start)
         swaps_last_hr = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
                                                                           timestamp_1h_ago)
@@ -138,8 +139,18 @@ class Fetcher:
 
         swaps_participants = []
         swaps_leaderboard = {}
+        stress_test_swaps_detailed_data = {}
 
         for swap in swaps_since_test_start:
+
+            # filling detailed info about swap
+            stress_test_swaps_detailed_data[swap["uuid"]] = {
+                "time": swap["events"][0]["timestamp"] // 1000,
+                "base_coin": trading_pairs[0],
+                "base_coin_amount": enforce_float(base_volume),
+                "rel_coin": trading_pairs[1],
+                "rel_coin_amount": enforce_float(quote_volume)
+            }
 
             # adding swap participants addys
 
@@ -177,6 +188,8 @@ class Fetcher:
                         else:
                             swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
 
+            self.stress_test_swaps_data = stress_test_swaps_detailed_data
+            
             first_event = swap["events"][0]["event"]["data"]
 
             swap_price = (
