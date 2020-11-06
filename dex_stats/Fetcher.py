@@ -140,7 +140,8 @@ class Fetcher:
         swaps_participants = []
         swaps_leaderboard = {}
         stress_test_swaps_detailed_data = {}
-
+        first_event = swap["events"][0]["event"]["data"]
+        
         for swap in swaps_since_test_start:
 
             # filling detailed info about swap
@@ -189,8 +190,6 @@ class Fetcher:
                             swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
 
             self.stress_test_swaps_data = stress_test_swaps_detailed_data
-
-            first_event = swap["events"][0]["event"]["data"]
 
             swap_price = (
                     Decimal(first_event["taker_amount"])
