@@ -147,9 +147,9 @@ class Fetcher:
             stress_test_swaps_detailed_data[swap["uuid"]] = {
                 "time": swap["events"][0]["timestamp"] // 1000,
                 "base_coin": trading_pairs[0],
-                "base_coin_amount": enforce_float(base_volume),
+                "base_coin_amount": Decimal(first_event["maker_amount"]),
                 "rel_coin": trading_pairs[1],
-                "rel_coin_amount": enforce_float(quote_volume)
+                "rel_coin_amount": Decimal(first_event["taker_amount"])
             }
 
             # adding swap participants addys
@@ -189,7 +189,7 @@ class Fetcher:
                             swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
 
             self.stress_test_swaps_data = stress_test_swaps_detailed_data
-            
+
             first_event = swap["events"][0]["event"]["data"]
 
             swap_price = (
