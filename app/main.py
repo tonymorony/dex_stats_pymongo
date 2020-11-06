@@ -25,6 +25,12 @@ async def summary():
         summary = json.load(f)
     return summary
 
+@app.get('/api/v1/stress_test_uuids')
+async def summary():
+    with open('data/stress_test_uuids.json') as f:
+        summary = json.load(f)
+    return summary
+
 # @app.get('/api/v1/summary')
 # async def summary():
 #     with open('data/summary.json') as f:

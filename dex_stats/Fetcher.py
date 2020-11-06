@@ -45,6 +45,7 @@ class Fetcher:
                             for x
                             in self.possible_pairs
                             if x not in self.pairs ]
+        self.stress_test_swaps_data = []
 
     @measure
     def pipeline(self):
@@ -86,6 +87,8 @@ class Fetcher:
         self.stress_test_summary["stress_test_total_swaps"] = stress_test_swap_counter
         with open('../data/stress_test_summary.json', 'w') as f:
             json.dump(self.stress_test_summary, f)
+        with open('../data/stress_test_uuids.json', 'w') as f:
+            json.dump(self.stress_test_swaps_data, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
@@ -115,14 +118,18 @@ class Fetcher:
         timestamp_right_now = int(datetime.now().strftime("%s"))
 
         # TODO: set stress test timestamp here
-        # timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s"))
         # 2020 year start for testing now
         stress_test_start = 1577836800
         stress_test_end =   1609372800
-        swaps_last_24h = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
+        timestamp_1h_ago = int((datetime.now() - timedelta(hours = 1)).strftime("%s"))
+        swaps_since_test_start = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
                                                                           stress_test_start)
-        swaps_count = len(swaps_last_24h)
+        self.stress_test_swaps_data = swaps_since_test_start
+        swaps_last_hr = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
+                                                                          quote_currency,
+                                                                          timestamp_1h_ago)
+        swaps_count = len(swaps_since_test_start)
 
         # TODO: figure this one out as well...
         # to make sure swaps are in the ascending order
@@ -132,7 +139,7 @@ class Fetcher:
         swaps_participants = []
         swaps_leaderboard = {}
 
-        for swap in swaps_last_24h:
+        for swap in swaps_since_test_start:
 
             # adding swap participants addys
 
