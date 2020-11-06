@@ -140,10 +140,9 @@ class Fetcher:
         swaps_participants = []
         swaps_leaderboard = {}
         stress_test_swaps_detailed_data = {}
-        first_event = swap["events"][0]["event"]["data"]
-        
-        for swap in swaps_since_test_start:
 
+        for swap in swaps_since_test_start:
+            first_event = swap["events"][0]["event"]["data"]
             # filling detailed info about swap
             stress_test_swaps_detailed_data[swap["uuid"]] = {
                 "time": swap["events"][0]["timestamp"] // 1000,
