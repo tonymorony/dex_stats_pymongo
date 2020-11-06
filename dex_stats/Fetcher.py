@@ -90,7 +90,7 @@ class Fetcher:
         with open('../data/stress_test_summary.json', 'w') as f:
             json.dump(self.stress_test_summary, f)
         with open('../data/stress_test_uuids.json', 'w') as f:
-            json.dump(self.stress_test_swaps_data, f, use_decimal=True)
+            json.dump(self.stress_test_swaps_data, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
@@ -147,9 +147,9 @@ class Fetcher:
             stress_test_swaps_detailed_data[swap["uuid"]] = {
                 "time": swap["events"][0]["timestamp"] // 1000,
                 "base_coin": trading_pairs[0],
-                "base_coin_amount": Decimal(first_event["maker_amount"]),
+                "base_coin_amount": first_event["maker_amount"],
                 "rel_coin": trading_pairs[1],
-                "rel_coin_amount": Decimal(first_event["taker_amount"])
+                "rel_coin_amount": first_event["taker_amount"]
             }
 
             # adding swap participants addys
