@@ -151,7 +151,7 @@ class Fetcher:
                 "rel_coin": trading_pairs[1],
                 "rel_coin_amount": format(float(first_event["taker_amount"]), ".10f")
             }
-            stress_test_swaps_detailed_data = dict(sorted(stress_test_swaps_detailed_data.items(), reversed=True))
+            stress_test_swaps_detailed_data = dict(sorted(stress_test_swaps_detailed_data.items(), reverse=True))
 
             # adding swap participants addys
 
