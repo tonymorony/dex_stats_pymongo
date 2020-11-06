@@ -125,7 +125,7 @@ class Fetcher:
         swaps_since_test_start = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
                                                                           stress_test_start)
-        self.stress_test_swaps_data = swaps_since_test_start
+        self.stress_test_swaps_data = list(swaps_since_test_start)
         swaps_last_hr = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
                                                                           timestamp_1h_ago)
