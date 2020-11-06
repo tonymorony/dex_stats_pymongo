@@ -139,7 +139,7 @@ class Fetcher:
 
         swaps_participants = []
         swaps_leaderboard = {}
-        stress_test_swaps_detailed_data = []
+        stress_test_swaps_detailed_data = {}
 
         for swap in swaps_since_test_start:
             first_event = swap["events"][0]["event"]["data"]
