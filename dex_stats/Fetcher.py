@@ -10,6 +10,7 @@ from utils import adex_calls
 from utils.adex_tickers import adex_tickers
 
 from collections import Counter
+import operator
 
 from MongoAPI import MongoAPI
 from utils.adex_calls import get_orderbook
@@ -70,7 +71,7 @@ class Fetcher:
                 stress_test_leaderboard = Counter(stress_test_leaderboard) + Counter(pair["swaps_leaderboard"])
             stress_test_unique_participants_list = list(set(stress_test_unique_participants_list))
             stress_test_unique_participants_count = len(stress_test_unique_participants_list)
-            stress_test_leaderboard = {k: v for k, v in sorted(stress_test_leaderboard.items(), key=lambda item: item[1])}
+            stress_test_leaderboard = dict(sorted(stress_test_leaderboard.items(), key=operator.itemgetter(1),reverse=True))
         # writing into special stress test file
         with open('../data/stress_test.json', 'w') as f:
             json.dump({
