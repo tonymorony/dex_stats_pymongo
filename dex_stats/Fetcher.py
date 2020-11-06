@@ -145,7 +145,7 @@ class Fetcher:
             first_event = swap["events"][0]["event"]["data"]
             # filling detailed info about swap
             stress_test_swaps_detailed_data[swap["events"][0]["timestamp"] // 1000] = {
-                "uuid": swap["uuid"]
+                "uuid": swap["uuid"],
                 "base_coin": trading_pairs[0],
                 "base_coin_amount": format(float(first_event["maker_amount"]), ".10f"),
                 "rel_coin": trading_pairs[1],
