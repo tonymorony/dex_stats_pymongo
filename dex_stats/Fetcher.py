@@ -85,7 +85,7 @@ class Fetcher:
         self.stress_test_summary["stress_test_unique_participants_count"] = stress_test_unique_participants_count
         self.stress_test_summary["stress_test_total_swaps"] = stress_test_swap_counter
         with open('../data/stress_test_summary.json', 'w') as f:
-            json.dump(self.stress_test_summary)
+            json.dump(self.stress_test_summary, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
