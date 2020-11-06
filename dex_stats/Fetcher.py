@@ -9,6 +9,7 @@ from requests.exceptions import ConnectionError
 from utils import adex_calls
 from utils.adex_tickers import adex_tickers
 
+from collections import Counter
 
 from MongoAPI import MongoAPI
 from utils.adex_calls import get_orderbook
@@ -57,6 +58,25 @@ class Fetcher:
 
         self.save_orderbook_data_as_json()
         self.save_summary_data_as_json()
+
+        # temp dirty trick. have to combine RICK_MORTY and MORTY_RICK into single data set
+        stress_test_unique_participants_list = []
+        stress_test_unique_participants_count = 0
+        stress_test_leaderboard = {}
+        with open('../data/summary.json', 'r') as f:
+            data = json.load(f)
+            for pair in data:
+                stress_test_unique_participants_list += pair["swaps_unique_participants"]
+                stress_test_leaderboard = Counter(stress_test_leaderboard) + Counter(pair["swaps_ledearboard"])
+            stress_test_unique_participants_list = set(stress_test_unique_participants_list)
+            stress_test_unique_participants_count = len(stress_test_unique_participants_list)
+        # writing into special stress test file
+        with open('../data/stress_test.json', 'w') as f:
+            json.dump({
+                "stress_test_unique_participants_count": stress_test_unique_participants_count,
+                "stress_test_unique_participants_list": stress_test_unique_participants_list,
+                "stress_test_leaderboard": stress_test_leaderboard
+            }, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
@@ -123,6 +143,7 @@ class Fetcher:
                             swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
                         else:
                             swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
+                # case for maker statuses
                 elif "TakerFeeValidated" in swap["success_events"]:
                     # adding taker addy
                     if event["event"]["type"] == "TakerFeeValidated":
