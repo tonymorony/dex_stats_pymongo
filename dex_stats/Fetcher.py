@@ -147,23 +147,19 @@ class Fetcher:
 
         temp_time_stamp = stress_test_start
         if self.graph_data_start_timestamp == 0:
-            graph_data_start_timestamp = int(datetime.now().strftime("%s"))
+            self.graph_data_start_timestamp = int(datetime.now().strftime("%s"))
         swaps_counter = 0
         timestamps_list = []
         # data for graph with 10 minutes step
         for swap in swaps_since_test_start:
             timestamps_list.append(swap["events"][0]["timestamp"] // 1000)
-        while temp_time_stamp < graph_data_start_timestamp:
+        while temp_time_stamp < self.graph_data_start_timestamp:
             temp_time_stamp += 600
             for timestamp in timestamps_list:
                 if  timestamp < temp_time_stamp:
                     swaps_counter += 1
                     timestamps_list.remove(timestamp)
-            for graph_object in self.graph_data:
-                if next(iter(graph_object)) == temp_time_stamp:
-                    graph_object[temp_time_stamp] += swaps_counter
-                else:
-                    self.graph_data.append({temp_time_stamp : swaps_counter})
+            self.graph_data.append({temp_time_stamp : swaps_counter})
 
         for swap in swaps_since_test_start:
 
