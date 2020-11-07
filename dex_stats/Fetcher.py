@@ -275,7 +275,6 @@ class Fetcher:
             "base_currency": base_currency,
             "quote_currency": quote_currency,
             "swaps_count_total": swaps_count,
-            "swaps_per_minute": format(float(swaps_count / minutes_since_stress_test_start), ".10f"),
             "swaps_unique_participants": unique_participants,
             "swaps_leaderboard": swaps_leaderboard
         })
@@ -298,7 +297,8 @@ class Fetcher:
 
         self.stress_test_summary = {
             "stress_test_start": stress_test_start,
-            "stress_test_end": stress_test_end
+            "stress_test_end": stress_test_end,
+            "swaps_per_minute": format(float(swaps_count / minutes_since_stress_test_start), ".10f")
         }
 
     def fetch_data_for_null_pair(self, pair):
