@@ -37,6 +37,7 @@ class Fetcher:
         self.ticker = {}
         self.orderbook = {}
         self.trades = {}
+        self.graph_data = []
 
 
         self.possible_pairs = list(["{}_{}".format(perm[0], perm[1]) 
@@ -142,19 +143,21 @@ class Fetcher:
         swaps_participants = []
         swaps_leaderboard = {}
         stress_test_swaps_detailed_data = {}
-        graph_data = []
 
         temp_time_stamp = stress_test_start
         current_time = int(datetime.now().strftime("%s"))
-
+        swaps_counter = 0
+        timestamps_list = []
         # data for graph with 10 minutes step
+        for swap in swaps_since_test_start:
+            timestamps_list.append(swap["events"][0]["timestamp"] // 1000)
         while temp_time_stamp < current_time:
-            swaps_counter = 0
+            # working slow af now since temp_time_stamp in very very past
             temp_time_stamp += 600
-            for swap in swaps_since_test_start:
-                if swap["events"][0]["timestamp"] // 1000 < temp_time_stamp:
+            for timestamp in timestamps_list:
+                if  timestamp < temp_time_stamp:
                     swaps_counter += 1
-            graph_data.append({temp_time_stamp : swaps_counter})
+            self.graph_data.append({temp_time_stamp : swaps_counter})
 
         for swap in swaps_since_test_start:
 
