@@ -145,7 +145,7 @@ class Fetcher:
         graph_data = []
 
         temp_time_stamp = stress_test_start
-        current_time = int(datetime.now())
+        current_time = int(datetime.now().strftime("%s"))
 
         # data for graph with 10 minutes step
         while temp_time_stamp < current_time:
