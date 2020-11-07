@@ -160,7 +160,10 @@ class Fetcher:
                 if  timestamp < temp_time_stamp:
                     swaps_counter += 1
                     timestamps_list.remove(timestamp)
-            self.graph_data[temp_time_stamp] += swaps_counter
+            if temp_time_stamp in self.graph_data.keys():
+                self.graph_data[temp_time_stamp] += swaps_counter
+            else:
+                self.graph_data[temp_time_stamp] = swaps_counter
 
         for swap in swaps_since_test_start:
 
