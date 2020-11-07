@@ -169,7 +169,7 @@ class Fetcher:
                     res[temp_list] += (temp_dict[temp_list])
                 else:
                     res[temp_list] = temp_dict[temp_list]
-        self.graph_data = res
+                self.graph_data.append(res)
 
 
         for swap in swaps_since_test_start:
