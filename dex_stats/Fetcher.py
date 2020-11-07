@@ -91,6 +91,8 @@ class Fetcher:
             json.dump(self.stress_test_summary, f)
         with open('../data/stress_test_uuids.json', 'w') as f:
             json.dump(self.stress_test_swaps_data, f)
+        with open('../data/graph_data.json', 'w') as f:
+            json.dump(self.graph_data, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
@@ -140,8 +142,22 @@ class Fetcher:
         swaps_participants = []
         swaps_leaderboard = {}
         stress_test_swaps_detailed_data = {}
+        graph_data = []
+
+        temp_time_stamp = stress_test_start
+        current_time = int(datetime.now()
+
+        # data for graph with 10 minutes step
+        while temp_time_stamp < current_time:
+            swaps_counter = 0
+            temp_time_stamp += 600
+            for swap in swaps_since_test_start:
+                if swap["events"][0]["timestamp"] // 1000 < temp_time_stamp:
+                    swaps_counter += 1
+            graph_data.append({temp_time_stamp : swaps_counter})
 
         for swap in swaps_since_test_start:
+
             first_event = swap["events"][0]["event"]["data"]
             # filling detailed info about swap
             stress_test_swaps_detailed_data[swap["events"][0]["timestamp"] // 1000] = {
