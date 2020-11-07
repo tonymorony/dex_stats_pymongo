@@ -162,16 +162,17 @@ class Fetcher:
                     timestamps_list.remove(timestamp)
             self.graph_data.append({temp_time_stamp : swaps_counter})
         # have to summarize swaps in same timelines for RICK_MORTY and MORTY_RICK
-        res = {}
-        temp_graph_data = []
-        for temp_dict in self.graph_data:
-            for temp_list in temp_dict:
-                if temp_list in res:
-                    res[temp_list] += (temp_dict[temp_list])
-                else:
-                    res[temp_list] = temp_dict[temp_list]
-                temp_graph_data.append(res)
-        self.graph_data = temp_graph_data
+        if self.graph_data_start_timestamp > 0:
+            res = {}
+            temp_graph_data = []
+            for temp_dict in self.graph_data:
+                for temp_list in temp_dict:
+                    if temp_list in res:
+                        res[temp_list] += (temp_dict[temp_list])
+                    else:
+                        res[temp_list] = temp_dict[temp_list]
+                    temp_graph_data.append(res)
+            self.graph_data = temp_graph_data
 
 
         for swap in swaps_since_test_start:
