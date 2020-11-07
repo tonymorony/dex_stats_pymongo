@@ -146,6 +146,7 @@ class Fetcher:
         stress_test_swaps_detailed_data = {}
 
         temp_time_stamp = stress_test_start
+        # have to count from same time for RICK_MORTY and MORTY_RICK
         if self.graph_data_start_timestamp == 0:
             self.graph_data_start_timestamp = int(datetime.now().strftime("%s"))
         swaps_counter = 0
@@ -160,6 +161,16 @@ class Fetcher:
                     swaps_counter += 1
                     timestamps_list.remove(timestamp)
             self.graph_data.append({temp_time_stamp : swaps_counter})
+        # have to summarize swaps in same timelines for RICK_MORTY and MORTY_RICK
+        res = dict()
+        for dict in self.graph_data:
+            for list in dict:
+                if list in res:
+                    res[list] += (dict[list])
+                else:
+                    res[list] = dict[list]
+        self.graph_data = res
+
 
         for swap in swaps_since_test_start:
 
