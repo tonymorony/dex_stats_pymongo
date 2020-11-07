@@ -136,6 +136,7 @@ class Fetcher:
                                                                           quote_currency,
                                                                           timestamp_1h_ago)
         swaps_count = len(swaps_since_test_start)
+        minutes_since_stress_test_start =  int((datetime.now() - stress_test_start) / 60
 
         # TODO: figure this one out as well...
         # to make sure swaps are in the ascending order
@@ -274,6 +275,7 @@ class Fetcher:
             "base_currency": base_currency,
             "quote_currency": quote_currency,
             "swaps_count_total": swaps_count,
+            "swaps_per_minute": format(float(swaps_count / minutes_since_stress_test_start), ".10f"),
             "swaps_unique_participants": unique_participants,
             "swaps_leaderboard": swaps_leaderboard
         })
