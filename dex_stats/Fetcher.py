@@ -112,7 +112,7 @@ class Fetcher:
         quote_volume = Decimal(0)
         last_trade_time = Decimal(0)
 
-        swap_prices = list()
+        swap_prices = []
         price_change_24h = Decimal(0)
         highest_price_24h = Decimal(0)
         lowest_price_24h = Decimal(0)
@@ -162,7 +162,7 @@ class Fetcher:
                     timestamps_list.remove(timestamp)
             self.graph_data.append({temp_time_stamp : swaps_counter})
         # have to summarize swaps in same timelines for RICK_MORTY and MORTY_RICK
-        res = dict()
+        res = {}
         for dict in self.graph_data:
             for list in dict:
                 if list in res:
