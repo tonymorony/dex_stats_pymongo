@@ -157,6 +157,7 @@ class Fetcher:
             for timestamp in timestamps_list:
                 if  timestamp < temp_time_stamp:
                     swaps_counter += 1
+                    timestamps_list.remove(timestamp)
             self.graph_data.append({temp_time_stamp : swaps_counter})
 
         for swap in swaps_since_test_start:
