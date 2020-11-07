@@ -152,7 +152,6 @@ class Fetcher:
         for swap in swaps_since_test_start:
             timestamps_list.append(swap["events"][0]["timestamp"] // 1000)
         while temp_time_stamp < current_time:
-            # working slow af now since temp_time_stamp in very very past
             temp_time_stamp += 600
             for timestamp in timestamps_list:
                 if  timestamp < temp_time_stamp:
