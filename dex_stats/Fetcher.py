@@ -37,7 +37,7 @@ class Fetcher:
         self.ticker = {}
         self.orderbook = {}
         self.trades = {}
-        self.graph_data = []
+        self.graph_data = {}
         self.graph_data_start_timestamp = 0
 
 
@@ -160,20 +160,7 @@ class Fetcher:
                 if  timestamp < temp_time_stamp:
                     swaps_counter += 1
                     timestamps_list.remove(timestamp)
-            self.graph_data.append({temp_time_stamp : swaps_counter})
-        # have to summarize swaps in same timelines for RICK_MORTY and MORTY_RICK
-        if self.graph_data_start_timestamp > 0:
-            res = {}
-            temp_graph_data = []
-            for temp_dict in self.graph_data:
-                for temp_list in temp_dict:
-                    if temp_list in res:
-                        res[temp_list] += (temp_dict[temp_list])
-                    else:
-                        res[temp_list] = temp_dict[temp_list]
-                    temp_graph_data.append(res)
-            self.graph_data = temp_graph_data
-
+            self.graph_data[temp_time_stamp] += swaps_counter
 
         for swap in swaps_since_test_start:
 
