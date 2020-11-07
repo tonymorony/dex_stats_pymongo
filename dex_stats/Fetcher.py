@@ -136,7 +136,7 @@ class Fetcher:
                                                                           quote_currency,
                                                                           timestamp_1h_ago)
         swaps_count = len(swaps_since_test_start)
-        minutes_since_stress_test_start =  int((datetime.now() - stress_test_start)) / 60
+        minutes_since_stress_test_start =  (int(datetime.now().timestamp()) - stress_test_start) / 60
 
         # TODO: figure this one out as well...
         # to make sure swaps are in the ascending order
