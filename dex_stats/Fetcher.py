@@ -163,12 +163,12 @@ class Fetcher:
             self.graph_data.append({temp_time_stamp : swaps_counter})
         # have to summarize swaps in same timelines for RICK_MORTY and MORTY_RICK
         res = {}
-        for dict in self.graph_data:
-            for list in dict:
-                if list in res:
-                    res[list] += (dict[list])
+        for temp_dict in self.graph_data:
+            for temp_list in temp_dict:
+                if temp_list in res:
+                    res[temp_list] += (temp_dict[temp_list])
                 else:
-                    res[list] = dict[list]
+                    res[temp_list] = temp_dict[temp_list]
         self.graph_data = res
 
 
