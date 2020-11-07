@@ -93,8 +93,9 @@ class Fetcher:
             json.dump(self.stress_test_summary, f)
         with open('../data/stress_test_uuids.json', 'w') as f:
             json.dump(self.stress_test_swaps_data, f)
+        graph_objects = [{k: v} for k, v in self.graph_data.items()]
         with open('../data/graph_data.json', 'w') as f:
-            json.dump(self.graph_data, f)
+            json.dump(self.graph_objects, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
@@ -164,6 +165,7 @@ class Fetcher:
                 self.graph_data[temp_time_stamp] += swaps_counter
             else:
                 self.graph_data[temp_time_stamp] = swaps_counter
+
 
         for swap in swaps_since_test_start:
 
