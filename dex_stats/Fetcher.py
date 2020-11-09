@@ -298,7 +298,7 @@ class Fetcher:
         self.stress_test_summary = {
             "stress_test_start": stress_test_start,
             "stress_test_end": stress_test_end,
-            "swaps_per_minute": format(float(swaps_count / minutes_since_stress_test_start), ".10f")
+            "swaps_per_hour": round((float(60 * swaps_count / minutes_since_stress_test_start)), 10)
         }
 
     def fetch_data_for_null_pair(self, pair):
