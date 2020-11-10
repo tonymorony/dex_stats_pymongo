@@ -95,7 +95,7 @@ class Fetcher:
             sorted_stress_test_swaps_data = {}
             for key, value in sorted(self.stress_test_swaps_data.items(), key=lambda x: x[0], reverse=True):
                 sorted_stress_test_swaps_data[key] = value
-            uuid_objects = [{k: v} for k, v in self.sorted_stress_test_swaps_data.items()]
+            uuid_objects = [{k: v} for k, v in sorted_stress_test_swaps_data.items()]
             json.dump(uuid_objects, f)
             #json.dump(self.stress_test_swaps_data, f)
         #graph_objects = [{k: v} for k, v in self.graph_data.items()]
