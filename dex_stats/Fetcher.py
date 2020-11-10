@@ -92,8 +92,10 @@ class Fetcher:
         with open('/home/shutdowner/dex_stats_pymongo/data/stress_test_summary.json', 'w') as f:
             json.dump(self.stress_test_summary, f)
         with open('/home/shutdowner/dex_stats_pymongo/data/stress_test_uuids.json', 'w') as f:
-            sorted_orders = dict(sorted(self.stress_test_swaps_data.items(), key=operator.itemgetter(1), reverse=True))
-            json.dump(sorted_orders, f)
+            sorted_stress_test_swaps_data = {}
+            for key, value in sorted(self.stress_test_swaps_data.items(), key=lambda x: x[0]):
+                sorted_stress_test_swaps_data = value
+            json.dump(sorted_stress_test_swaps_data, f)
             #json.dump(self.stress_test_swaps_data, f)
         #graph_objects = [{k: v} for k, v in self.graph_data.items()]
         with open('/home/shutdowner/dex_stats_pymongo/data/graph_data.json', 'w') as f:
