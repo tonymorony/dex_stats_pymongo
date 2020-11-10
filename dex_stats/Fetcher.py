@@ -130,7 +130,7 @@ class Fetcher:
 
         # TODO: set stress test timestamp here
         # 2020 year start for testing now
-        stress_test_start = 1577836800
+        stress_test_start = 1604188800
         stress_test_end =   1609372800
         timestamp_1h_ago = int((datetime.now() - timedelta(hours = 1)).strftime("%s"))
         swaps_since_test_start = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
