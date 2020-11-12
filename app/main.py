@@ -37,6 +37,12 @@ async def summary():
         summary = json.load(f)
     return summary
 
+@app.get('/api/v1/graph_data_2')
+async def summary():
+    with open('data/graph_data_2.json') as f:
+        summary = json.load(f)
+    return summary
+
 # @app.get('/api/v1/summary')
 # async def summary():
 #     with open('data/summary.json') as f:
