@@ -1,23 +1,22 @@
+import sys
 import json
 import logging
-import sys
-from datetime import datetime, timedelta
-from decimal import *
 from itertools import permutations
+from datetime import timedelta
+from datetime import datetime
+
+from decimal import *
 
 from requests.exceptions import ConnectionError
-from utils import adex_calls
-from utils.adex_tickers import adex_tickers
-
 
 from MongoAPI import MongoAPI
-from utils.adex_calls import get_orderbook
 from utils.adex_tickers import adex_tickers
-from utils.utils import enforce_float
-from utils.utils import measure
+from utils.adex_calls import get_orderbook
 from utils.utils import prettify_orders
+from utils.utils import enforce_float
 from utils.utils import sort_orders
-
+from utils.utils import measure
+from utils import adex_calls
 
 
 
@@ -34,7 +33,7 @@ class Fetcher:
         self.trades = {}
 
 
-        self.possible_pairs = list(["{}_{}".format(perm[0], perm[1]) 
+        self.possible_pairs = list(["{}_{}".format(perm[0], perm[1])
                                     for perm
                                     in permutations(adex_tickers, 2)])
         self.pairs = self.mongo.get_trading_pairs()
@@ -69,10 +68,10 @@ class Fetcher:
         quote_volume = Decimal(0)
         last_trade_time = Decimal(0)
 
-        swap_prices = list()
         price_change_24h = Decimal(0)
         highest_price_24h = Decimal(0)
         lowest_price_24h = Decimal(0)
+        swap_prices = list()
 
         mm_orderbook = self.fetch_mm2_orderbook(base_currency, quote_currency)
         asks, lowest_ask, bids, highest_bid = self.parse_orderbook(mm_orderbook)
@@ -86,7 +85,7 @@ class Fetcher:
         # TODO: figure this one out as well...
         # to make sure swaps are in the ascending order
         # swaps_last_24h = sorted( swaps_last_24h,
-        #                         key=lambda q: q["events"][0]["timestamp"] )
+        #                          key=lambda q: q["events"][0]["timestamp"] )
 
         for swap in swaps_last_24h:
             first_event = swap["events"][0]["event"]["data"]
