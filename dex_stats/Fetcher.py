@@ -38,6 +38,7 @@ class Fetcher:
         self.orderbook = {}
         self.trades = {}
         self.graph_data = {}
+        self.graph_data_2 = {}
         self.graph_data_start_timestamp = 0
 
 
@@ -98,8 +99,10 @@ class Fetcher:
             json.dump(sorted_stress_test_swaps_data, f)
             #json.dump(self.stress_test_swaps_data, f)
         #graph_objects = [{k: v} for k, v in self.graph_data.items()]
-        with open('/home/shutdowner/dex_stats_pymongo/data/graph_data.json', 'w') as f:
-            json.dump(self.graph_data, f)
+        # with open('/home/shutdowner/dex_stats_pymongo/data/graph_data.json', 'w') as f:
+        #     json.dump(self.graph_data, f)
+        # with open('/home/shutdowner/dex_stats_pymongo/data/graph_data_2.json', 'w') as f:
+        #     json.dump(self.graph_data_2, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
@@ -171,6 +174,19 @@ class Fetcher:
             else:
                 self.graph_data[temp_time_stamp] = swaps_counter
 
+        swaps_counter = 0
+        for swap in swaps_since_test_start:
+            timestamps_list.append(swap["events"][0]["timestamp"] // 1000)
+        while temp_time_stamp < self.graph_data_start_timestamp:
+            temp_time_stamp += 3600
+            for timestamp in timestamps_list:
+                if  timestamp < temp_time_stamp:
+                    swaps_counter += 1
+                    timestamps_list.remove(timestamp)
+            if temp_time_stamp in self.graph_data.keys():
+                self.graph_data_2[temp_time_stamp] += swaps_counter
+            else:
+                self.graph_data_2[temp_time_stamp] = swaps_counter
 
         for swap in swaps_since_test_start:
 
