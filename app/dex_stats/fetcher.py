@@ -122,11 +122,11 @@ class Fetcher:
                           else Decimal(0))
 
             price_change_24h = ((
-                                        last_price
-                                        -
-                                        price_start_24h
+                                    last_price
+                                    -
+                                    price_start_24h
                                 ) /
-                                Decimal(100)
+                                    Decimal(100)
                                 )
 
             # TRADES CALL

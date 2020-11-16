@@ -1,8 +1,18 @@
 import json
 import logging
 from fastapi import FastAPI
+from pydantic import BaseModel
+
+from tasks import parser_init
+
 
 app = FastAPI()
+
+
+@app.on_event("startup")
+async def startup_event():
+    await parser_init.delay()
+
 
 
 @app.get('/api/v1/summary')

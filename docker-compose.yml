@@ -1,0 +1,27 @@
+version: '3'
+
+services:
+  mongo:
+    image: mongo
+
+  rabbit:
+    image: rabbitmq:latest
+
+  worker:
+    image: dex-stats:latest
+    depends_on:
+      - mongo
+      - rabbit
+    volumes:
+      - "/home/dathbezumniy/seed_db:/seed_db"
+    entrypoint: celery --app tasks.celery_app worker -Q test-queue -c 4 --loglevel=info
+
+  api:
+    image: dex-stats:latest
+    depends_on:
+      - mongo
+      - rabbit
+      - worker
+    ports:
+      - "80:8000"
+    entrypoint: gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0
