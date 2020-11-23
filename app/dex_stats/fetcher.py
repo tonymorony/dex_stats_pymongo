@@ -9,14 +9,17 @@ from decimal import *
 
 from requests.exceptions import ConnectionError
 
-from MongoAPI import MongoAPI
-from utils.adex_tickers import adex_tickers
-from utils.adex_calls import get_orderbook
-from utils.utils import prettify_orders
-from utils.utils import enforce_float
-from utils.utils import sort_orders
-from utils.utils import measure
-from utils import adex_calls
+from .mongoAPI import MongoAPI
+from .db.config import MONGODB_URL
+from .utils.adex_tickers import adex_tickers
+from .utils.batch_params import enable_calls, electrum_calls
+from .utils.adex_calls import batch_request
+from .utils.adex_calls import get_orderbook
+from .utils.utils import prettify_orders
+from .utils.utils import enforce_float
+from .utils.utils import sort_orders
+from .utils.utils import measure
+from .utils import adex_calls
 
 
 
@@ -33,6 +36,8 @@ class Fetcher:
         self.trades = {}
 
 
+    @measure
+    def pipeline(self):
         self.possible_pairs = list(["{}_{}".format(perm[0], perm[1])
                                     for perm
                                     in permutations(adex_tickers, 2)])
@@ -42,8 +47,9 @@ class Fetcher:
                             in self.possible_pairs
                             if x not in self.pairs ]
 
-    @measure
-    def pipeline(self):
+        self.mm2_batch_electum()
+        self.mm2_batch_enable()
+
         for pair in self.pairs:
             self.fetch_data_for_existing_pair(pair)
 
@@ -237,9 +243,16 @@ class Fetcher:
         return asks, lowest_ask, bids, highest_bid
 
 
+    def mm2_batch_enable(self):
+        return batch_request("http://mm2:7783", enable_calls)
+
+
+    def mm2_batch_electum(self):
+        return batch_request("http://mm2:7783", electrum_calls)
+
 
     def fetch_mm2_orderbook(self, base_currency, quote_currency):
-        mm2_localhost = "http://127.0.0.1:7783"
+        mm2_localhost = "http://mm2:7783"
         mm2_username  = "testuser"
         return get_orderbook(mm2_localhost,
                              mm2_username,
@@ -251,19 +264,19 @@ class Fetcher:
     #      serving json files is probably! not very good
 
     def save_orderbook_data_as_json(self):
-        with open('../data/orderbook.json', 'w') as f:
+        with open('/app/data/orderbook.json', 'w') as f:
             json.dump(self.orderbook, f)
 
     def save_ticker_data_as_json(self):
-        with open('../data/ticker.json', 'w') as f:
+        with open('/app/data/ticker.json', 'w') as f:
             json.dump(self.ticker, f)
 
     def save_summary_data_as_json(self):
-        with open('../data/summary.json', 'w') as f:
+        with open('/app/data/summary.json', 'w') as f:
             json.dump(self.summary, f)
 
     def save_trades_data_as_json(self):
-        with open('../data/trades.json', 'w') as f:
+        with open('/app/data/trades.json', 'w') as f:
             json.dump(self.trades, f)
 
     # DATA VALIDATION

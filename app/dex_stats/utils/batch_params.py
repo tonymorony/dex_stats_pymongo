@@ -4,7 +4,6 @@ enable_calls = [
     "gas_station_url": "https://ethgasstation.info/json/ethgasAPI.json",
     "method": "enable",
     "swap_contract_address": "0x8500AFc0bc5214728082163326C2FF0C73f4a871",
-    "tx_history": True,
     "urls": [
       "http://eth1.cipig.net:8555",
       "http://eth2.cipig.net:8555",
@@ -17,7 +16,6 @@ enable_calls = [
     "gas_station_url": "https://ethgasstation.info/json/ethgasAPI.json",
     "method": "enable",
     "swap_contract_address": "0x8500AFc0bc5214728082163326C2FF0C73f4a871",
-    "tx_history": True,
     "urls": [
       "http://eth1.cipig.net:8555",
       "http://eth2.cipig.net:8555",
@@ -30,7 +28,6 @@ enable_calls = [
     "gas_station_url": "https://ethgasstation.info/json/ethgasAPI.json",
     "method": "enable",
     "swap_contract_address": "0x8500AFc0bc5214728082163326C2FF0C73f4a871",
-    "tx_history": True,
     "urls": [
       "http://eth1.cipig.net:8555",
       "http://eth2.cipig.net:8555",
@@ -43,7 +40,6 @@ enable_calls = [
     "gas_station_url": "https://ethgasstation.info/json/ethgasAPI.json",
     "method": "enable",
     "swap_contract_address": "0x8500AFc0bc5214728082163326C2FF0C73f4a871",
-    "tx_history": True,
     "urls": [
       "http://eth1.cipig.net:8555",
       "http://eth2.cipig.net:8555",
@@ -56,7 +52,6 @@ enable_calls = [
     "gas_station_url": "https://ethgasstation.info/json/ethgasAPI.json",
     "method": "enable",
     "swap_contract_address": "0x8500AFc0bc5214728082163326C2FF0C73f4a871",
-    "tx_history": True,
     "urls": [
       "http://eth1.cipig.net:8555",
       "http://eth2.cipig.net:8555",
@@ -69,7 +64,6 @@ enable_calls = [
     "gas_station_url": "https://ethgasstation.info/json/ethgasAPI.json",
     "method": "enable",
     "swap_contract_address": "0x8500AFc0bc5214728082163326C2FF0C73f4a871",
-    "tx_history": True,
     "urls": [
       "http://eth1.cipig.net:8555",
       "http://eth2.cipig.net:8555",
@@ -82,7 +76,6 @@ enable_calls = [
     "gas_station_url": "https://ethgasstation.info/json/ethgasAPI.json",
     "method": "enable",
     "swap_contract_address": "0x8500AFc0bc5214728082163326C2FF0C73f4a871",
-    "tx_history": True,
     "urls": [
       "http://eth1.cipig.net:8555",
       "http://eth2.cipig.net:8555",
@@ -95,7 +88,6 @@ enable_calls = [
     "gas_station_url": "https://ethgasstation.info/json/ethgasAPI.json",
     "method": "enable",
     "swap_contract_address": "0x8500AFc0bc5214728082163326C2FF0C73f4a871",
-    "tx_history": True,
     "urls": [
       "http://eth1.cipig.net:8555",
       "http://eth2.cipig.net:8555",
@@ -126,7 +118,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10056"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -149,7 +140,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10001"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -172,7 +162,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10000"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -195,7 +184,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10050"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -218,7 +206,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10058"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -241,7 +228,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10063"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -264,7 +250,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10061"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -287,7 +272,6 @@ electrum_calls = [
         "url": "electrumx03.zcoin.io:50001"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -310,7 +294,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10059"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -333,7 +316,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10057"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -356,7 +338,6 @@ electrum_calls = [
         "url": "electrum1.cipig.net:10053"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -379,7 +360,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10062"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -402,7 +382,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10052"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -425,7 +404,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10060"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -448,7 +426,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10065"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -471,7 +448,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10054"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -494,7 +470,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10055"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -517,7 +492,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10051"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -535,7 +509,6 @@ electrum_calls = [
         "url": "electrum2.ilien.io:65011"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -558,7 +531,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10003"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -581,7 +553,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10023"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -604,7 +575,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10021"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -627,7 +597,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10005"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -650,7 +619,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10007"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -673,7 +641,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10008"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -696,7 +663,6 @@ electrum_calls = [
         "url": "electrum1.cipig.net:10017"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -719,7 +685,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10034"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -742,7 +707,6 @@ electrum_calls = [
         "url": "el2.veruscoin.io:17485"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -765,7 +729,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10064"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -788,7 +751,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10010"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -811,7 +773,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10012"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -834,7 +795,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10006"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -857,7 +817,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10019"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -880,7 +839,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10015"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -903,7 +861,6 @@ electrum_calls = [
         "url": "electrum1.cipig.net:10018"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -926,7 +883,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10029"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   },
   {
@@ -949,7 +905,6 @@ electrum_calls = [
         "url": "electrum3.cipig.net:10004"
       }
     ],
-    "tx_history": True,
     "userpass": "testuser"
   }
 ]

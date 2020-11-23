@@ -152,7 +152,6 @@ class Parser():
             self.unique_pairs[pair] = 1
 
     ### PYMONGO INPUT
-    @measure
     def insert_into_parsed_files_collection(self):
         self.parsed.update_one({'data': {
             '$exists': 'true',
@@ -163,13 +162,11 @@ class Parser():
             upsert=True)
         logging.debug('Input into parsed files collection: DONE')
 
-    @measure
     def insert_into_unique_pairs_collection(self):
         self.pairs.insert_one({'data': self.unique_pairs})
         logging.debug('Input into unique pairs collection: DONE')
 
-    @measure
-    async def insert_into_swap_collection(self, conn: AsyncIOMotorClient, swap_file: str):
+    def insert_into_swap_collection(self, swap_file: str):
         logging.debug('\n\nInsertion into collection:'
                       '\n  reading swap file {}'.format(swap_file))
 
@@ -198,7 +195,7 @@ class Parser():
         if not swap_successful:
             return
 
-        await conn.swaps.successful.insert_one(raw_swap_data)
+        self.swaps.successful.insert_one(raw_swap_data)
         logging.debug('Inserting into (((successful))) collection: DONE')
         self.parsed_files.append(uuid)
         self.add_trading_pair(pair)
@@ -209,11 +206,11 @@ class Parser():
 
     ### DEBUG
     @measure
-    async def create_mongo_collections(self):
+    def create_mongo_collections(self):
         swap_files_pool = self.create_maker_files_pool_with_abs_path()
 
         for swap_file_abspath, swap_file_name in swap_files_pool:
-            await self.insert_into_swap_collection(swap_file_abspath)
+            self.insert_into_swap_collection(swap_file_abspath)
 
         self.insert_into_parsed_files_collection()
         self.insert_into_unique_pairs_collection()
