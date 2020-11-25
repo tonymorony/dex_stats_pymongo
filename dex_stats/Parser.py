@@ -219,5 +219,4 @@ class Parser():
 
 if __name__ == "__main__":
     p = Parser()
-    p.clean_up()
     p.create_mongo_collections()
