@@ -1,0 +1,9 @@
+{
+	"gui":"CLI",
+	"netid": 9999,
+	"passphrase": "a",
+	"rpc_password": "testuser",
+	"userhome":"/",
+	"rpcip": "0.0.0.0",
+	"rpc_local_only": false
+}

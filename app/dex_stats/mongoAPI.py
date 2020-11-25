@@ -3,11 +3,12 @@ import json
 from pymongo import MongoClient
 from datetime import datetime, timedelta
 
+from .db.config import MONGODB_URL
 
 
 class MongoAPI:
     def __init__(self):
-        self.client           = MongoClient("mongodb://localhost:27017/")
+        self.client           = MongoClient(MONGODB_URL)
         self.db               = self.client["swaps"]
         self.swaps_collection = self.db.successful
         self.trading_pairs    = self.db.trading_pairs

@@ -1,12 +1,13 @@
+import sys
 import json
 import bson
 
 import logging
-import sys
-from datetime import datetime, timedelta
-from decimal import *
 from itertools import permutations
+from datetime import timedelta
+from datetime import datetime
 
+from decimal import *
 from requests.exceptions import ConnectionError
 from utils import adex_calls
 from utils.adex_tickers import adex_tickers
@@ -14,14 +15,19 @@ from utils.adex_tickers import adex_tickers
 from collections import Counter
 import operator
 
-from MongoAPI import MongoAPI
-from utils.adex_calls import get_orderbook
-from utils.adex_tickers import adex_tickers
-from utils.utils import enforce_float
-from utils.utils import measure
-from utils.utils import prettify_orders
-from utils.utils import sort_orders
+from requests.exceptions import ConnectionError
 
+from .mongoAPI import MongoAPI
+from .db.config import MONGODB_URL
+from .utils.adex_tickers import adex_tickers
+from .utils.batch_params import enable_calls, electrum_calls
+from .utils.adex_calls import batch_request
+from .utils.adex_calls import get_orderbook
+from .utils.utils import prettify_orders
+from .utils.utils import enforce_float
+from .utils.utils import sort_orders
+from .utils.utils import measure
+from .utils import adex_calls
 
 
 
@@ -42,7 +48,9 @@ class Fetcher:
         self.graph_data_start_timestamp = 0
 
 
-        self.possible_pairs = list(["{}_{}".format(perm[0], perm[1]) 
+    @measure
+    def pipeline(self):
+        self.possible_pairs = list(["{}_{}".format(perm[0], perm[1])
                                     for perm
                                     in permutations(adex_tickers, 2)])
         self.pairs = self.mongo.get_trading_pairs()
@@ -52,13 +60,8 @@ class Fetcher:
                             if x not in self.pairs ]
         self.stress_test_swaps_data = {}
 
-    @measure
-    def pipeline(self):
-        # for pair in self.pairs:
-        #     self.fetch_data_for_existing_pair(pair)
-
-        # for pair in self.null_pairs:
-        #     self.fetch_data_for_null_pair(pair)
+        self.mm2_batch_electum()
+        self.mm2_batch_enable()
 
         # TODO: set stress test pairs here
         self.fetch_data_for_existing_pair("RICK_MORTY")
@@ -148,7 +151,7 @@ class Fetcher:
         # TODO: figure this one out as well...
         # to make sure swaps are in the ascending order
         # swaps_last_24h = sorted( swaps_last_24h,
-        #                         key=lambda q: q["events"][0]["timestamp"] )
+        #                          key=lambda q: q["events"][0]["timestamp"] )
 
         swaps_participants = []
         swaps_leaderboard = {}
@@ -272,11 +275,11 @@ class Fetcher:
                           else Decimal(0))
 
             price_change_24h = ((
-                                        last_price
-                                        -
-                                        price_start_24h
+                                    last_price
+                                    -
+                                    price_start_24h
                                 ) /
-                                Decimal(100)
+                                    Decimal(100)
                                 )
 
             # TRADES CALL
@@ -389,8 +392,16 @@ class Fetcher:
         return asks, lowest_ask, bids, highest_bid
 
 
+    def mm2_batch_enable(self):
+        return batch_request("http://mm2:7783", enable_calls)
+
+
+    def mm2_batch_electum(self):
+        return batch_request("http://mm2:7783", electrum_calls)
+
+
     def fetch_mm2_orderbook(self, base_currency, quote_currency):
-        mm2_localhost = "http://127.0.0.1:7783"
+        mm2_localhost = "http://mm2:7783"
         mm2_username  = "testuser"
         return get_orderbook(mm2_localhost,
                              mm2_username,
