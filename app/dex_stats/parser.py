@@ -1,21 +1,23 @@
-import json
-import logging
 import os
 import sys
+import json
+import logging
 
+from .db.config import MONGODB_URL
+from .db.mongodb import AsyncIOMotorClient
 from pymongo import MongoClient
-from utils.adex_tickers import adex_tickers
-from utils.swap_events import (taker_swap_error_events,
+from .utils.adex_tickers import adex_tickers
+from .utils.swap_events import (taker_swap_error_events,
                                maker_swap_error_events,
                                taker_swap_success_events,
                                maker_swap_success_events)
-from utils.utils import measure
+from .utils.utils import measure
 
 
 class Parser():
     def __init__(self, async_mode=False,
                  data_analysis=False, use_swap_events=True,
-                 swaps_folder_path="/home/dathbezumniy/seed_db/seed_db/64ae8510aac9546d5e7704e31ce1774513864555/SWAPS/STATS/MAKER"):
+                 swaps_folder_path="/seed_db/64ae8510aac9546d5e7704e31ce1774513864555/SWAPS/STATS/MAKER"):
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
         # parser config
@@ -27,7 +29,10 @@ class Parser():
         self.taker_folder_path = swaps_folder_path[:-6] + 'TAKER/'
 
         # init mongo client connection and create swaps database
-        self.client = MongoClient('mongodb://localhost:27017/')
+        self.client = MongoClient(MONGODB_URL)
+        self.motor = AsyncIOMotorClient(MONGODB_URL,
+                                         maxPoolSize=20,
+                                         minPoolSize=10)
         self.swaps = self.client.swaps
 
         # creating main collections for successful/failed swaps
@@ -147,7 +152,6 @@ class Parser():
             self.unique_pairs[pair] = 1
 
     ### PYMONGO INPUT
-    @measure
     def insert_into_parsed_files_collection(self):
         self.parsed.update_one({'data': {
             '$exists': 'true',
@@ -156,14 +160,12 @@ class Parser():
         },
             {'$addToSet': {'data': {'$each': self.parsed_files}}},
             upsert=True)
-        logging.debug('Input to parser files collection: DONE')
+        logging.debug('Input into parsed files collection: DONE')
 
-    @measure
     def insert_into_unique_pairs_collection(self):
         self.pairs.insert_one({'data': self.unique_pairs})
-        logging.debug('Input to unique pairs collection: DONE')
+        logging.debug('Input into unique pairs collection: DONE')
 
-    @measure
     def insert_into_swap_collection(self, swap_file: str):
         logging.debug('\n\nInsertion into collection:'
                       '\n  reading swap file {}'.format(swap_file))
@@ -193,7 +195,7 @@ class Parser():
         if not swap_successful:
             return
 
-        self.successful.insert_one(raw_swap_data)
+        self.swaps.successful.insert_one(raw_swap_data)
         logging.debug('Inserting into (((successful))) collection: DONE')
         self.parsed_files.append(uuid)
         self.add_trading_pair(pair)
@@ -214,9 +216,10 @@ class Parser():
         self.insert_into_unique_pairs_collection()
         self.create_index_uuid()
         logging.debug('total uuids with None: {}'.format(self.validate_uuid))
-        logging.debug('total pairs with None: {}'.format(self.validate_uuid))
+        logging.debug('total pairs with None: {}'.format(self.validate_pairs))
 
 
 if __name__ == "__main__":
     p = Parser()
+    p.clean_up()
     p.create_mongo_collections()

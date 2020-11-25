@@ -1,0 +1,39 @@
+version: '3'
+
+services:
+  mongo:
+    image: mongo
+
+  rabbit:
+    image: rabbitmq:latest
+  
+  mm2:
+    image: komodoofficial/atomicdexapi:beta-2.0.2712
+    volumes:
+      - "/home/dathbezumniy/dex-stats/mm2conf:/mm2"
+    ports:
+      - "127.0.0.1:7783:7783"
+
+  celery:
+    image: dex-stats:latest
+    depends_on:
+      - mongo
+      - rabbit
+      - mm2
+    volumes:
+      - "/home/dathbezumniy/seed_db:/seed_db"
+      - "/home/dathbezumniy/dex-stats/app/data:/app/data"
+    entrypoint: celery --app tasks.celery_app worker -B -c 4 --loglevel=info
+
+  api:
+    image: dex-stats:latest
+    depends_on:
+      - mongo
+      - rabbit
+      - celery
+      - mm2
+    volumes:
+      - "/home/dathbezumniy/dex-stats/app/data:/app/data"
+    ports:
+      - "80:8000"
+    entrypoint: gunicorn main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0
