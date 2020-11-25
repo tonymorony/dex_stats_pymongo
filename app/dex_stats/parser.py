@@ -3,15 +3,15 @@ import sys
 import json
 import logging
 
-from .db.config import MONGODB_URL
-from .db.mongodb import AsyncIOMotorClient
+from db.config import MONGODB_URL
+from db.mongodb import AsyncIOMotorClient
 from pymongo import MongoClient
-from .utils.adex_tickers import adex_tickers
-from .utils.swap_events import (taker_swap_error_events,
+from utils.adex_tickers import adex_tickers
+from utils.swap_events import (taker_swap_error_events,
                                maker_swap_error_events,
                                taker_swap_success_events,
                                maker_swap_success_events)
-from .utils.utils import measure
+from utils.utils import measure
 
 
 class Parser():
