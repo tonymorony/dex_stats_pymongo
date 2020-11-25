@@ -4,8 +4,8 @@ adex_tickers =  [
     "CRYPTO",  "DAI",     "DASH",    "DEX",       "DGB",
     "DOGE",    "ECA",     "EMC2",    "ETH",       "FTC",
     "HUSH",    "ILN",     "JUMBLR",  "KMD",       "LABS",
-    "LTC",     "MCL",     "MGW",     "NAV",
+    "LTC",     "MCL",     "MORTY",   "MGW",     "NAV",
     "OOT",     "PANGEA",  "PAX",     "QTUM",      "REVS",
-    "RFOX",               "RVN",     "SUPERNET",  "TUSD",
+    "RICK",    "RFOX",    "RVN",     "SUPERNET",  "TUSD",
     "USDC",    "VRSC",    "XZC",     "ZEC",       "ZER"
 ]

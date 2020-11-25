@@ -1,11 +1,19 @@
 import sys
 import json
+import bson
+
 import logging
 from itertools import permutations
 from datetime import timedelta
 from datetime import datetime
 
 from decimal import *
+from requests.exceptions import ConnectionError
+from utils import adex_calls
+from utils.adex_tickers import adex_tickers
+
+from collections import Counter
+import operator
 
 from requests.exceptions import ConnectionError
 
@@ -31,9 +39,13 @@ class Fetcher:
 
         # endpoint data variables
         self.summary = []
+        self.stress_test_summary = {}
         self.ticker = {}
         self.orderbook = {}
         self.trades = {}
+        self.graph_data = {}
+        self.graph_data_2 = {}
+        self.graph_data_start_timestamp = 0
 
 
     @measure
@@ -46,21 +58,58 @@ class Fetcher:
                             for x
                             in self.possible_pairs
                             if x not in self.pairs ]
+        self.stress_test_swaps_data = {}
 
         self.mm2_batch_electum()
         self.mm2_batch_enable()
 
-        for pair in self.pairs:
-            self.fetch_data_for_existing_pair(pair)
-
-        for pair in self.null_pairs:
-            self.fetch_data_for_null_pair(pair)
+        # TODO: set stress test pairs here
+        self.fetch_data_for_existing_pair("RICK_MORTY")
+        self.fetch_data_for_existing_pair("MORTY_RICK")
 
         self.save_orderbook_data_as_json()
         self.save_summary_data_as_json()
+
+        # temp dirty trick. have to combine RICK_MORTY and MORTY_RICK into single data set
+        stress_test_unique_participants_list = []
+        stress_test_unique_participants_count = 0
+        stress_test_swap_counter = 0
+        stress_test_leaderboard = {}
+        with open('/home/shutdowner/dex_stats_pymongo/data/summary.json', 'r') as f:
+            data = json.load(f)
+            for pair in data:
+                stress_test_unique_participants_list += pair["swaps_unique_participants"]
+                stress_test_leaderboard = Counter(stress_test_leaderboard) + Counter(pair["swaps_leaderboard"])
+                stress_test_swap_counter += pair["swaps_count_total"]
+            stress_test_unique_participants_list = list(set(stress_test_unique_participants_list))
+            stress_test_unique_participants_count = len(stress_test_unique_participants_list)
+            stress_test_leaderboard = dict(sorted(stress_test_leaderboard.items(), key=operator.itemgetter(1),reverse=True))
+        # writing into special stress test file
+        with open('/home/shutdowner/dex_stats_pymongo/data/stress_test.json', 'w') as f:
+            json.dump({
+                "stress_test_unique_participants_count": stress_test_unique_participants_count,
+                "stress_test_unique_participants_list": stress_test_unique_participants_list,
+                "stress_test_leaderboard": stress_test_leaderboard
+            }, f)
+        self.stress_test_summary["stress_test_unique_participants_count"] = stress_test_unique_participants_count
+        self.stress_test_summary["stress_test_total_swaps"] = stress_test_swap_counter
+        with open('/home/shutdowner/dex_stats_pymongo/data/stress_test_summary.json', 'w') as f:
+            json.dump(self.stress_test_summary, f)
+        with open('/home/shutdowner/dex_stats_pymongo/data/stress_test_uuids.json', 'w') as f:
+            sorted_stress_test_swaps_data = {}
+            for key, value in sorted(self.stress_test_swaps_data.items(), key=lambda x: x[0], reverse=True):
+                sorted_stress_test_swaps_data[key] = value
+            json.dump(sorted_stress_test_swaps_data, f)
+            #json.dump(self.stress_test_swaps_data, f)
+        #graph_objects = [{k: v} for k, v in self.graph_data.items()]
+        # with open('/home/shutdowner/dex_stats_pymongo/data/graph_data.json', 'w') as f:
+        #     json.dump(self.graph_data, f)
+        # with open('/home/shutdowner/dex_stats_pymongo/data/graph_data_2.json', 'w') as f:
+        #    json.dump(self.graph_data_2, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
+    # stress_test edition
     def fetch_data_for_existing_pair(self, pair):
         trading_pairs = pair.split("_")
         base_currency = trading_pairs[0]
@@ -74,27 +123,125 @@ class Fetcher:
         quote_volume = Decimal(0)
         last_trade_time = Decimal(0)
 
+        swap_prices = []
         price_change_24h = Decimal(0)
         highest_price_24h = Decimal(0)
         lowest_price_24h = Decimal(0)
-        swap_prices = list()
+        uniquie_participants = Decimal(0)
 
         mm_orderbook = self.fetch_mm2_orderbook(base_currency, quote_currency)
         asks, lowest_ask, bids, highest_bid = self.parse_orderbook(mm_orderbook)
 
         timestamp_right_now = int(datetime.now().strftime("%s"))
-        timestamp_24h_ago = int((datetime.now() - timedelta(1)).strftime("%s"))
-        swaps_last_24h = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
+
+        # TODO: set stress test timestamp here
+        # 2020 year start for testing now
+        stress_test_start = 1604188800
+        stress_test_end =   1609372800
+        timestamp_1h_ago = int((datetime.now() - timedelta(hours = 1)).strftime("%s"))
+        swaps_since_test_start = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
-                                                                          timestamp_24h_ago)
+                                                                          stress_test_start)
+        swaps_last_hr = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
+                                                                          quote_currency,
+                                                                          timestamp_1h_ago)
+        swaps_count = len(swaps_since_test_start)
+        minutes_since_stress_test_start =  (int(datetime.now().timestamp()) - stress_test_start) / 60
 
         # TODO: figure this one out as well...
         # to make sure swaps are in the ascending order
         # swaps_last_24h = sorted( swaps_last_24h,
         #                          key=lambda q: q["events"][0]["timestamp"] )
 
-        for swap in swaps_last_24h:
+        swaps_participants = []
+        swaps_leaderboard = {}
+        stress_test_swaps_detailed_data = {}
+
+        temp_time_stamp = stress_test_start
+        # have to count from same time for RICK_MORTY and MORTY_RICK
+        if self.graph_data_start_timestamp == 0:
+            self.graph_data_start_timestamp = int(datetime.now().strftime("%s"))
+        swaps_counter = 0
+        timestamps_list = []
+        # data for graph with 10 minutes step
+        for swap in swaps_since_test_start:
+            timestamps_list.append(swap["events"][0]["timestamp"] // 1000)
+        while temp_time_stamp < self.graph_data_start_timestamp:
+            temp_time_stamp += 600
+            for timestamp in timestamps_list:
+                if  timestamp < temp_time_stamp:
+                    swaps_counter += 1
+                    timestamps_list.remove(timestamp)
+            if temp_time_stamp in self.graph_data.keys():
+                self.graph_data[temp_time_stamp] += swaps_counter
+            else:
+                self.graph_data[temp_time_stamp] = swaps_counter
+
+        temp_time_stamp = stress_test_start
+        for swap in swaps_since_test_start:
+            timestamps_list.append(swap["events"][0]["timestamp"] // 1000)
+        while temp_time_stamp < self.graph_data_start_timestamp:
+            swaps_counter = 0
+            temp_time_stamp += 3600
+            for timestamp in timestamps_list:
+                if  timestamp < temp_time_stamp:
+                    swaps_counter += 1
+                    timestamps_list.remove(timestamp)
+            if temp_time_stamp in self.graph_data_2.keys():
+                self.graph_data_2[temp_time_stamp] += swaps_counter
+            else:
+                self.graph_data_2[temp_time_stamp] = swaps_counter
+
+        for swap in swaps_since_test_start:
+
             first_event = swap["events"][0]["event"]["data"]
+            # filling detailed info about swap
+            stress_test_swaps_detailed_data[swap["events"][0]["timestamp"] // 1000] = {
+                "uuid": swap["uuid"],
+                "base_coin": trading_pairs[0],
+                "base_coin_amount": format(float(first_event["maker_amount"]), ".10f"),
+                "rel_coin": trading_pairs[1],
+                "rel_coin_amount": format(float(first_event["taker_amount"]), ".10f")
+            }
+            stress_test_swaps_detailed_data = dict(sorted(stress_test_swaps_detailed_data.items()))
+
+            # adding swap participants addys
+
+            for event in swap["events"]:
+                # case for taker statuses
+                if "TakerFeeSent" in swap["success_events"]:
+                    # adding taker addy
+                    if event["event"]["type"] == "TakerFeeSent":
+                        swaps_participants.append(event["event"]["data"]["from"][0])
+                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        else:
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
+                    # adding maker addy
+                    if event["event"]["type"] == "MakerPaymentReceived":
+                        swaps_participants.append(event["event"]["data"]["from"][0])
+                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        else:
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
+                # case for maker statuses
+                elif "TakerFeeValidated" in swap["success_events"]:
+                    # adding taker addy
+                    if event["event"]["type"] == "TakerFeeValidated":
+                        swaps_participants.append(event["event"]["data"]["from"][0])
+                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        else:
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
+                    # adding maker addy
+                    if event["event"]["type"] == "MakerPaymentSent":
+                        swaps_participants.append(event["event"]["data"]["from"][0])
+                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        else:
+                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
+            self.stress_test_swaps_data = {**self.stress_test_swaps_data, **stress_test_swaps_detailed_data}
+            # self.stress_test_swaps_data = stress_test_swaps_detailed_data
 
             swap_price = (
                     Decimal(first_event["taker_amount"])
@@ -145,20 +292,15 @@ class Fetcher:
                 "type": "buy"
             })
 
+        unique_participants = list(set(swaps_participants))
         # SUMMARY CALL
         self.summary.append({
             "trading_pairs": pair,
             "base_currency": base_currency,
             "quote_currency": quote_currency,
-            "last_price": enforce_float(last_price),
-            "lowest_ask": enforce_float(lowest_ask),
-            "highest_bid": enforce_float(highest_bid),
-            "base_volume_24h": enforce_float(base_volume),
-            "quote_volume_24h": enforce_float(quote_volume),
-            "price_change_percent_24h": enforce_float(price_change_24h),
-            "highest_price_24h": enforce_float(highest_price_24h),
-            "lowest_price_24h": enforce_float(lowest_price_24h),
-            "last_trade_time": str(last_trade_time)
+            "swaps_count_total": swaps_count,
+            "swaps_unique_participants": unique_participants,
+            "swaps_leaderboard": swaps_leaderboard
         })
 
         # TICKER CALL
@@ -175,6 +317,13 @@ class Fetcher:
                                  "bids" : prettify_orders(sort_orders(bids)),
                                  "asks" : prettify_orders(sort_orders(asks, 
                                                                       reverse=True))
+        }
+
+        self.stress_test_summary = {
+            "stress_test_start": stress_test_start,
+            "stress_test_end": stress_test_end,
+            "swaps_per_hour": round((float(60 * swaps_count / minutes_since_stress_test_start)), 10),
+            "participants_per_hour": round((float(60 * len(unique_participants) / minutes_since_stress_test_start)), 10)
         }
 
     def fetch_data_for_null_pair(self, pair):
@@ -264,19 +413,19 @@ class Fetcher:
     #      serving json files is probably! not very good
 
     def save_orderbook_data_as_json(self):
-        with open('/app/data/orderbook.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/orderbook.json', 'w') as f:
             json.dump(self.orderbook, f)
 
     def save_ticker_data_as_json(self):
-        with open('/app/data/ticker.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/ticker.json', 'w') as f:
             json.dump(self.ticker, f)
 
     def save_summary_data_as_json(self):
-        with open('/app/data/summary.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/summary.json', 'w') as f:
             json.dump(self.summary, f)
 
     def save_trades_data_as_json(self):
-        with open('/app/data/trades.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/trades.json', 'w') as f:
             json.dump(self.trades, f)
 
     # DATA VALIDATION
