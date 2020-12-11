@@ -21,7 +21,7 @@ from utils.utils import enforce_float
 from utils.utils import measure
 from utils.utils import prettify_orders
 from utils.utils import sort_orders
-
+from utils.rpc_lib import def_credentials
 
 
 
@@ -45,11 +45,6 @@ class Fetcher:
         self.possible_pairs = list(["{}_{}".format(perm[0], perm[1]) 
                                     for perm
                                     in permutations(adex_tickers, 2)])
-        self.pairs = self.mongo.get_trading_pairs()
-        self.null_pairs = [ x
-                            for x
-                            in self.possible_pairs
-                            if x not in self.pairs ]
         self.stress_test_swaps_data = {}
 
     @measure
@@ -72,7 +67,7 @@ class Fetcher:
         stress_test_unique_participants_count = 0
         stress_test_swap_counter = 0
         stress_test_leaderboard = {}
-        with open('/home/shutdowner/dex_stats_pymongo/data/summary.json', 'r') as f:
+        with open('/root/dex_stats_pymongo/data/summary.json', 'r') as f:
             data = json.load(f)
             for pair in data:
                 stress_test_unique_participants_list += pair["swaps_unique_participants"]
@@ -82,7 +77,7 @@ class Fetcher:
             stress_test_unique_participants_count = len(stress_test_unique_participants_list)
             stress_test_leaderboard = dict(sorted(stress_test_leaderboard.items(), key=operator.itemgetter(1),reverse=True))
         # writing into special stress test file
-        with open('/home/shutdowner/dex_stats_pymongo/data/stress_test.json', 'w') as f:
+        with open('/root/dex_stats_pymongo/data/stress_test.json', 'w') as f:
             json.dump({
                 "stress_test_unique_participants_count": stress_test_unique_participants_count,
                 "stress_test_unique_participants_list": stress_test_unique_participants_list,
@@ -90,18 +85,18 @@ class Fetcher:
             }, f)
         self.stress_test_summary["stress_test_unique_participants_count"] = stress_test_unique_participants_count
         self.stress_test_summary["stress_test_total_swaps"] = stress_test_swap_counter
-        with open('/home/shutdowner/dex_stats_pymongo/data/stress_test_summary.json', 'w') as f:
+        with open('/root/dex_stats_pymongo/data/stress_test_summary.json', 'w') as f:
             json.dump(self.stress_test_summary, f)
-        with open('/home/shutdowner/dex_stats_pymongo/data/stress_test_uuids.json', 'w') as f:
+        with open('/root/dex_stats_pymongo/data/stress_test_uuids.json', 'w') as f:
             sorted_stress_test_swaps_data = {}
             for key, value in sorted(self.stress_test_swaps_data.items(), key=lambda x: x[0], reverse=True):
                 sorted_stress_test_swaps_data[key] = value
             json.dump(sorted_stress_test_swaps_data, f)
             #json.dump(self.stress_test_swaps_data, f)
         #graph_objects = [{k: v} for k, v in self.graph_data.items()]
-        with open('/home/shutdowner/dex_stats_pymongo/data/graph_data.json', 'w') as f:
+        with open('/root/dex_stats_pymongo/data/graph_data.json', 'w') as f:
             json.dump(self.graph_data, f)
-        with open('/home/shutdowner/dex_stats_pymongo/data/graph_data_2.json', 'w') as f:
+        with open('/root/dex_stats_pymongo/data/graph_data_2.json', 'w') as f:
            json.dump(self.graph_data_2, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
@@ -131,8 +126,8 @@ class Fetcher:
 
         # TODO: set stress test timestamp here
         # 2020 year start for testing now
-        stress_test_start = 1607758200
-        stress_test_end =   1607903999
+        stress_test_start = 1606780800
+        stress_test_end =   1607700485
         timestamp_1h_ago = int((datetime.now() - timedelta(hours = 1)).strftime("%s"))
         swaps_since_test_start = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
@@ -201,40 +196,69 @@ class Fetcher:
             stress_test_swaps_detailed_data = dict(sorted(stress_test_swaps_detailed_data.items()))
 
             # adding swap participants addys
-
+            rick_proxy = def_credentials("RICK")
             for event in swap["events"]:
                 # case for taker statuses
                 if "TakerFeeSent" in swap["success_events"]:
                     # adding taker addy
                     if event["event"]["type"] == "TakerFeeSent":
-                        swaps_participants.append(event["event"]["data"]["from"][0])
-                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
-                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        #swaps_participants.append(event["event"]["data"]["from"][0])
+                        taker_fee_hex = event["event"]["data"]["tx_hex"]
+                        taker_fee_hex_decoded = rick_proxy.decoderawtransaction(taker_fee_hex)
+                        taker_addy = taker_fee_hex_decoded["vout"][1]["scriptPubKey"]["addresses"][0]
+                        swaps_participants.append(taker_addy)
+                        #if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                        if taker_addy in swaps_leaderboard.keys():
+                            #swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                            swaps_leaderboard[taker_addy] += 1
                         else:
-                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
+                            swaps_leaderboard[taker_addy] = 1
+                            #swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
                     # adding maker addy
                     if event["event"]["type"] == "MakerPaymentReceived":
-                        swaps_participants.append(event["event"]["data"]["from"][0])
-                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
-                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        maker_payment_hex = event["event"]["data"]["tx_hex"]
+                        maker_payment_hex_decoded = rick_proxy.decoderawtransaction(maker_payment_hex)
+                        maker_addy = maker_payment_hex_decoded["vout"][2]["scriptPubKey"]["addresses"][0]
+                        #swaps_participants.append(event["event"]["data"]["from"][0])
+                        swaps_participants.append(maker_addy)
+                        #if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                        if maker_addy in swaps_leaderboard.keys():
+                            swaps_leaderboard[maker_addy] += 1
+                            #swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
                         else:
-                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
+                            swaps_leaderboard[maker_addy] = 1
+                            #swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
                 # case for maker statuses
                 elif "TakerFeeValidated" in swap["success_events"]:
                     # adding taker addy
                     if event["event"]["type"] == "TakerFeeValidated":
-                        swaps_participants.append(event["event"]["data"]["from"][0])
-                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
-                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        #swaps_participants.append(event["event"]["data"]["from"][0])
+                        taker_payment_hex = event["event"]["data"]["tx_hex"]
+                        taker_payment_hex_decoded = rick_proxy.decoderawtransaction(taker_payment_hex)
+                        taker_addy = taker_payment_hex_decoded["vout"][1]["scriptPubKey"]["addresses"][0]
+                        swaps_participants.append(taker_addy)
+                        #if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                        if taker_addy in swaps_leaderboard.keys():
+                            #swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                            swaps_leaderboard[taker_addy] += 1
                         else:
-                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
+                            swaps_leaderboard[taker_addy] = 1
+                            #swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
                     # adding maker addy
                     if event["event"]["type"] == "MakerPaymentSent":
-                        swaps_participants.append(event["event"]["data"]["from"][0])
-                        if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
-                            swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        maker_payment_hex = event["event"]["data"]["tx_hex"]
+                        maker_payment_hex_decoded = rick_proxy.decoderawtransaction(maker_payment_hex)
+                        maker_addy = maker_payment_hex_decoded["vout"][2]["scriptPubKey"]["addresses"][0]
+                        swaps_participants.append(maker_addy)
+                        #swaps_participants.append(event["event"]["data"]["from"][0])
+                        if maker_addy in swaps_leaderboard.keys():
+                            swaps_leaderboard[maker_addy] += 1
                         else:
-                            swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
+                            swaps_leaderboard[maker_addy] = 1
+                        #if event["event"]["data"]["from"][0] in swaps_leaderboard.keys():
+                        #    swaps_leaderboard[event["event"]["data"]["from"][0]] += 1
+                        #else:
+                        #    swaps_leaderboard[event["event"]["data"]["from"][0]] = 1
             self.stress_test_swaps_data = {**self.stress_test_swaps_data, **stress_test_swaps_detailed_data}
             # self.stress_test_swaps_data = stress_test_swaps_detailed_data
 
@@ -396,19 +420,19 @@ class Fetcher:
     #      serving json files is probably! not very good
 
     def save_orderbook_data_as_json(self):
-        with open('/home/shutdowner/dex_stats_pymongo/data/orderbook.json', 'w') as f:
+        with open('/root/dex_stats_pymongo/data/orderbook.json', 'w') as f:
             json.dump(self.orderbook, f)
 
     def save_ticker_data_as_json(self):
-        with open('/home/shutdowner/dex_stats_pymongo/data/ticker.json', 'w') as f:
+        with open('/root/dex_stats_pymongo/data/ticker.json', 'w') as f:
             json.dump(self.ticker, f)
 
     def save_summary_data_as_json(self):
-        with open('/home/shutdowner/dex_stats_pymongo/data/summary.json', 'w') as f:
+        with open('/root/dex_stats_pymongo/data/summary.json', 'w') as f:
             json.dump(self.summary, f)
 
     def save_trades_data_as_json(self):
-        with open('/home/shutdowner/dex_stats_pymongo/data/trades.json', 'w') as f:
+        with open('/root/dex_stats_pymongo/data/trades.json', 'w') as f:
             json.dump(self.trades, f)
 
     # DATA VALIDATION
