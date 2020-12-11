@@ -67,7 +67,7 @@ class Fetcher:
         stress_test_unique_participants_count = 0
         stress_test_swap_counter = 0
         stress_test_leaderboard = {}
-        with open('/root/dex_stats_pymongo/data/summary.json', 'r') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/summary.json', 'r') as f:
             data = json.load(f)
             for pair in data:
                 stress_test_unique_participants_list += pair["swaps_unique_participants"]
@@ -77,7 +77,7 @@ class Fetcher:
             stress_test_unique_participants_count = len(stress_test_unique_participants_list)
             stress_test_leaderboard = dict(sorted(stress_test_leaderboard.items(), key=operator.itemgetter(1),reverse=True))
         # writing into special stress test file
-        with open('/root/dex_stats_pymongo/data/stress_test.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/stress_test.json', 'w') as f:
             json.dump({
                 "stress_test_unique_participants_count": stress_test_unique_participants_count,
                 "stress_test_unique_participants_list": stress_test_unique_participants_list,
@@ -85,18 +85,18 @@ class Fetcher:
             }, f)
         self.stress_test_summary["stress_test_unique_participants_count"] = stress_test_unique_participants_count
         self.stress_test_summary["stress_test_total_swaps"] = stress_test_swap_counter
-        with open('/root/dex_stats_pymongo/data/stress_test_summary.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/stress_test_summary.json', 'w') as f:
             json.dump(self.stress_test_summary, f)
-        with open('/root/dex_stats_pymongo/data/stress_test_uuids.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/stress_test_uuids.json', 'w') as f:
             sorted_stress_test_swaps_data = {}
             for key, value in sorted(self.stress_test_swaps_data.items(), key=lambda x: x[0], reverse=True):
                 sorted_stress_test_swaps_data[key] = value
             json.dump(sorted_stress_test_swaps_data, f)
             #json.dump(self.stress_test_swaps_data, f)
         #graph_objects = [{k: v} for k, v in self.graph_data.items()]
-        with open('/root/dex_stats_pymongo/data/graph_data.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/graph_data.json', 'w') as f:
             json.dump(self.graph_data, f)
-        with open('/root/dex_stats_pymongo/data/graph_data_2.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/graph_data_2.json', 'w') as f:
            json.dump(self.graph_data_2, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
@@ -126,8 +126,8 @@ class Fetcher:
 
         # TODO: set stress test timestamp here
         # 2020 year start for testing now
-        stress_test_start = 1606780800
-        stress_test_end =   1607700485
+        stress_test_start = 1607758200
+        stress_test_end =   1607761800
         timestamp_1h_ago = int((datetime.now() - timedelta(hours = 1)).strftime("%s"))
         swaps_since_test_start = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
@@ -420,19 +420,19 @@ class Fetcher:
     #      serving json files is probably! not very good
 
     def save_orderbook_data_as_json(self):
-        with open('/root/dex_stats_pymongo/data/orderbook.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/orderbook.json', 'w') as f:
             json.dump(self.orderbook, f)
 
     def save_ticker_data_as_json(self):
-        with open('/root/dex_stats_pymongo/data/ticker.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/ticker.json', 'w') as f:
             json.dump(self.ticker, f)
 
     def save_summary_data_as_json(self):
-        with open('/root/dex_stats_pymongo/data/summary.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/summary.json', 'w') as f:
             json.dump(self.summary, f)
 
     def save_trades_data_as_json(self):
-        with open('/root/dex_stats_pymongo/data/trades.json', 'w') as f:
+        with open('/home/shutdowner/dex_stats_pymongo/data/trades.json', 'w') as f:
             json.dump(self.trades, f)
 
     # DATA VALIDATION
