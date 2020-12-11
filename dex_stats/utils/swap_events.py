@@ -7,6 +7,8 @@ maker_swap_success_events = [
     "TakerPaymentWaitConfirmStarted",
     "TakerPaymentValidatedAndConfirmed",
     "TakerPaymentSpent",
+    "TakerPaymentSpendConfirmStarted",
+    "TakerPaymentSpendConfirmed",
     "Finished"
 ]
 
@@ -29,8 +31,12 @@ maker_swap_error_events = [
     "TakerFeeValidateFailed",
     "MakerPaymentTransactionFailed",
     "MakerPaymentDataSendFailed",
+    "MakerPaymentWaitConfirmFailed",
     "TakerPaymentValidateFailed",
+    "TakerPaymentWaitConfirmFailed",
     "TakerPaymentSpendFailed",
+    "TakerPaymentSpendConfirmFailed",
+    "MakerPaymentWaitRefundStarted",
     "MakerPaymentRefunded",
     "MakerPaymentRefundFailed"
 ]
