@@ -99,10 +99,10 @@ class Fetcher:
             json.dump(sorted_stress_test_swaps_data, f)
             #json.dump(self.stress_test_swaps_data, f)
         #graph_objects = [{k: v} for k, v in self.graph_data.items()]
-        # with open('/home/shutdowner/dex_stats_pymongo/data/graph_data.json', 'w') as f:
-        #     json.dump(self.graph_data, f)
-        # with open('/home/shutdowner/dex_stats_pymongo/data/graph_data_2.json', 'w') as f:
-        #    json.dump(self.graph_data_2, f)
+        with open('/home/shutdowner/dex_stats_pymongo/data/graph_data.json', 'w') as f:
+            json.dump(self.graph_data, f)
+        with open('/home/shutdowner/dex_stats_pymongo/data/graph_data_2.json', 'w') as f:
+           json.dump(self.graph_data_2, f)
         self.save_ticker_data_as_json()
         self.save_trades_data_as_json()
 
@@ -126,15 +126,13 @@ class Fetcher:
         lowest_price_24h = Decimal(0)
         uniquie_participants = Decimal(0)
 
-        mm_orderbook = self.fetch_mm2_orderbook(base_currency, quote_currency)
-        asks, lowest_ask, bids, highest_bid = self.parse_orderbook(mm_orderbook)
 
         timestamp_right_now = int(datetime.now().strftime("%s"))
 
         # TODO: set stress test timestamp here
         # 2020 year start for testing now
-        stress_test_start = 1604188800
-        stress_test_end =   1609372800
+        stress_test_start = 1607758200
+        stress_test_end =   1607903999
         timestamp_1h_ago = int((datetime.now() - timedelta(hours = 1)).strftime("%s"))
         swaps_since_test_start = self.mongo.find_swaps_for_market_since_timestamp(base_currency,
                                                                           quote_currency,
@@ -310,17 +308,13 @@ class Fetcher:
 
         # ORDERBOOK CALL
         self.orderbook[pair] = {
-                            "timestamp" : "{}".format(timestamp_right_now),
-                                 "bids" : prettify_orders(sort_orders(bids)),
-                                 "asks" : prettify_orders(sort_orders(asks, 
-                                                                      reverse=True))
         }
 
         self.stress_test_summary = {
             "stress_test_start": stress_test_start,
             "stress_test_end": stress_test_end,
-            "swaps_per_hour": round((float(60 * swaps_count / minutes_since_stress_test_start)), 10),
-            "participants_per_hour": round((float(60 * len(unique_participants) / minutes_since_stress_test_start)), 10)
+            "swaps_per_hour": abs(round((float(60 * swaps_count / minutes_since_stress_test_start)), 10)),
+            "participants_per_hour": abs(round((float(60 * len(unique_participants) / minutes_since_stress_test_start)), 10))
         }
 
     def fetch_data_for_null_pair(self, pair):

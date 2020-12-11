@@ -15,7 +15,7 @@ from utils.utils import measure
 class Parser():
     def __init__(self, async_mode=False,
                  data_analysis=False, use_swap_events=True,
-                 swaps_folder_path="/home/shutdowner/seed_db/64ae8510aac9546d5e7704e31ce1774513864555/SWAPS/STATS/MAKER"):
+                 swaps_folder_path="/home/shutdowner/seed_db/2bf44966eba9c6da8a888833dec412618997949d/SWAPS/STATS/MAKER"):
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
         # parser config
