@@ -11,11 +11,10 @@ from utils.swap_events import (taker_swap_error_events,
                                maker_swap_success_events)
 from utils.utils import measure
 
-
 class Parser():
     def __init__(self, async_mode=False,
                  data_analysis=False, use_swap_events=True,
-                 swaps_folder_path="/home/shutdowner/seed_db/2bf44966eba9c6da8a888833dec412618997949d/SWAPS/STATS/MAKER"):
+                 swaps_folder_path="/root/seed_db/6c4d6316553bb9d6441d974170ed4b2ee065ea82/SWAPS/STATS/MAKER"):
         logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
         # parser config
@@ -191,6 +190,7 @@ class Parser():
         #   swap is unsuccessful
         swap_successful = self.is_swap_successful(swap_events)
         if not swap_successful:
+            print("failed")
             return
 
         self.successful.insert_one(raw_swap_data)
@@ -219,4 +219,5 @@ class Parser():
 
 if __name__ == "__main__":
     p = Parser()
+    p.clean_up()
     p.create_mongo_collections()
